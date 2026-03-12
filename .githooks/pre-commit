@@ -1,0 +1,37 @@
+#!/bin/bash
+# Pre-commit hook: enforce TypeScript types + test coverage >= 80%
+# This hook runs before every commit to ensure code quality
+
+echo "=== Pre-commit: TypeScript check ==="
+npm run typecheck 2>&1
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "ERROR: TypeScript check failed. Fix type errors before committing."
+  exit 1
+fi
+echo "TypeScript OK"
+
+echo ""
+echo "=== Pre-commit: Tests + Coverage (min 80%) ==="
+npm run test:coverage 2>&1
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "ERROR: Tests failed or coverage below 80%."
+  echo "Run 'npm run test:coverage' to see details."
+  echo ""
+  echo "Coverage thresholds (all must be >= 80%):"
+  echo "  - Statements: 80%"
+  echo "  - Branches:   80%"
+  echo "  - Functions:  80%"
+  echo "  - Lines:      80%"
+  echo ""
+  echo "Tips:"
+  echo "  - Run 'npm run test:watch' to develop tests interactively"
+  echo "  - Coverage only checks src/engines/ and src/utils/"
+  echo "  - Use '/project:test' for help writing tests"
+  exit 1
+fi
+echo "Tests + Coverage OK"
+
+echo ""
+echo "=== Pre-commit: All checks passed ==="

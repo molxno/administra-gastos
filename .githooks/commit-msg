@@ -1,0 +1,45 @@
+#!/bin/bash
+# Conventional Commits validation hook
+# Types: feat, fix, refactor, perf, style, docs, test, chore, ci
+# Format: <type>(<scope>): <description>
+
+commit_msg=$(cat "$1")
+
+# Allow merge commits
+if echo "$commit_msg" | grep -qE "^Merge "; then
+  exit 0
+fi
+
+# Conventional Commits regex
+pattern="^(feat|fix|refactor|perf|style|docs|test|chore|ci)(\([a-z0-9-]+\))?(!)?: .{1,100}"
+
+if ! echo "$commit_msg" | head -1 | grep -qE "$pattern"; then
+  echo ""
+  echo "ERROR: El mensaje de commit no sigue Conventional Commits."
+  echo ""
+  echo "Formato: <type>(<scope>): <descripcion>"
+  echo ""
+  echo "Types validos:"
+  echo "  feat     — Nueva funcionalidad"
+  echo "  fix      — Correccion de bug"
+  echo "  refactor — Cambio de codigo sin nueva feature ni fix"
+  echo "  perf     — Mejora de rendimiento"
+  echo "  style    — Formato de codigo (no CSS)"
+  echo "  docs     — Documentacion"
+  echo "  test     — Tests"
+  echo "  chore    — Mantenimiento, deps, config"
+  echo "  ci       — CI/CD"
+  echo ""
+  echo "Scopes sugeridos: engine, store, ui, onboarding, dashboard,"
+  echo "  budget, debts, goals, biweekly, emergency, transactions,"
+  echo "  insights, settings, deps"
+  echo ""
+  echo "Ejemplos:"
+  echo "  feat(engine): add inflation adjustment to goal planner"
+  echo "  fix(store): prevent recalculate loop on rehydration"
+  echo "  chore(deps): update recharts to v3.9"
+  echo ""
+  echo "Tu mensaje: $commit_msg"
+  echo ""
+  exit 1
+fi

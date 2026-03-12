@@ -12,10 +12,60 @@ App web de finanzas personales que actúa como tutor financiero senior. Analiza,
 
 ## Comandos
 ```bash
-npm run dev        # Servidor de desarrollo (Vite)
-npm run build      # TypeScript check + build producción
-npm run typecheck  # Solo TypeScript check
-npm run preview    # Preview del build
+npm run dev            # Servidor de desarrollo (Vite)
+npm run build          # TypeScript check + build producción
+npm run typecheck      # Solo TypeScript check
+npm run preview        # Preview del build
+npm run test           # Correr todos los tests
+npm run test:watch     # Tests en modo watch (desarrollo)
+npm run test:coverage  # Tests con reporte de cobertura
+npm run test:ci        # Tests + cobertura + verbose (CI)
+npm run precommit      # typecheck + test:coverage (lo que corre el hook)
+```
+
+## Testing
+- **Framework**: Vitest v4 (integrado con Vite)
+- **Coverage**: @vitest/coverage-v8, umbral mínimo **80%** en statements, branches, functions y lines
+- **Scope de cobertura**: `src/engines/**/*.ts` y `src/utils/**/*.ts`
+- **Naming**: `*.test.ts` para lógica, `*.test.tsx` para componentes
+- **Colocación**: Tests junto a los archivos fuente
+- **Pre-commit hook**: Bloquea commits si typecheck falla o cobertura < 80%
+
+## Gitflow
+
+### Ramas
+- `main` — Producción. Desplegado automáticamente en Vercel. **NO push directo.**
+- `dev` — Desarrollo/integración. Todas las features se integran aquí primero.
+- `feat/<nombre>` — Features nuevas (desde `dev`)
+- `fix/<nombre>` — Bug fixes (desde `dev`)
+- `refactor/<nombre>` — Refactorizaciones (desde `dev`)
+- `hotfix/<nombre>` — Fixes urgentes para producción (desde `main`, merge a `main` Y `dev`)
+
+### Flujo de trabajo
+```
+feat/mi-feature ──PR──▶ dev ──PR──▶ main (producción)
+fix/mi-fix      ──PR──▶ dev ──PR──▶ main
+hotfix/urgente  ──PR──▶ main + dev (solo emergencias)
+```
+
+1. **Crear rama**: `git checkout -b feat/mi-feature dev`
+2. **Commits**: Usar Conventional Commits (validado por hook)
+3. **Push**: `git push -u origin feat/mi-feature`
+4. **PR a dev**: Crear PR, esperar review, merge
+5. **Release**: Cuando dev está estable, PR de `dev → main`
+
+### Conventional Commits (obligatorio)
+```
+<type>(<scope>): <descripción>
+```
+- **Types**: `feat`, `fix`, `refactor`, `perf`, `style`, `docs`, `test`, `chore`, `ci`
+- **Scopes**: `engine`, `store`, `ui`, `onboarding`, `dashboard`, `budget`, `debts`, `goals`, `biweekly`, `emergency`, `transactions`, `insights`, `settings`, `deps`
+- Hook en `.githooks/commit-msg` valida automáticamente
+- Hook en `.githooks/pre-push` bloquea push directo a main
+
+### Setup hooks (para nuevos clones)
+```bash
+git config core.hooksPath .githooks
 ```
 
 ## Arquitectura
@@ -83,8 +133,56 @@ src/
 - Todo componente de UI compartido vive en `components/shared/`
 - Español como idioma de la UI, locale configurable por usuario
 
+## Comandos Claude Code (slash commands)
+
+### Desarrollo
+| Comando | Qué hace |
+|---|---|
+| `/project:dev` | Prepara entorno y levanta servidor de desarrollo |
+| `/project:build` | Pipeline completo: typecheck + build producción |
+| `/project:typecheck` | Verificación de tipos con diagnóstico detallado |
+| `/project:fix <descripción>` | Diagnostica y arregla un bug específico |
+| `/project:refactor <objetivo>` | Refactoriza código manteniendo interfaces |
+
+### Agentes especializados
+| Comando | Rol | Qué hace |
+|---|---|---|
+| `/project:security` | Agente de Seguridad | Auditoría: XSS, datos sensibles, deps, validación financiera |
+| `/project:debug <problema>` | Agente de Debug | Diagnóstico sistemático: hipótesis, verificación, causa raíz |
+| `/project:ui <tarea>` | Agente de UI | Revisión/implementación con design system del proyecto |
+| `/project:test <tarea>` | Agente de Tests | Estrategia de testing, setup Vitest, escritura de tests |
+| `/project:version <tarea>` | Agente de Versionamiento | Conventional commits, semver, releases, changelog |
+| `/project:architecture <tarea>` | Agente de Arquitectura | Revisión estructural, flujo de datos, cambios a engines/store |
+| `/project:deploy <tarea>` | Agente de Deploy | Vercel: pre-deploy checks, diagnóstico de fallos, optimización |
+
+## Flujo de trabajo recomendado
+
+### Antes de commitear
+```bash
+npm run typecheck    # Verificar tipos
+npm run build        # Verificar build completo
+```
+
+### Antes de deploy
+1. `/project:security` — auditoría rápida
+2. `/project:build` — verificar build limpio
+3. `/project:deploy verificar` — pre-deploy checklist
+
+### Para nuevas features
+1. `/project:architecture <plan>` — validar diseño
+2. Implementar el código
+3. `/project:test <feature>` — escribir tests
+4. `/project:ui revisar` — verificar UI
+5. `/project:version` — commit con conventional commits
+
 ## Gotchas
 - Tailwind v4 usa `@import "tailwindcss"` — NO `@tailwind base/components/utilities`
 - `@tailwindcss/vite` se configura en vite.config.ts como plugin, no hay postcss.config
 - Zustand persist usa `partialize` para excluir `financialState` (se recalcula)
 - `onRehydrateStorage` dispara `recalculate()` tras cargar de localStorage
+- lightningcss debe estar explícito en devDependencies para Vercel (Linux binaries)
+- Node >=20 requerido — version pinneada en `.nvmrc`
+- Vercel necesita rewrite `/(.*) → /index.html` para SPA routing si hay 404 en rutas directas
+- **Pre-commit hook** corre typecheck + tests con cobertura — commits bloqueados si < 80%
+- Git hooks viven en `.githooks/` — nuevos clones necesitan `git config core.hooksPath .githooks`
+- Vitest config está dentro de `vite.config.ts` (no archivo separado)
