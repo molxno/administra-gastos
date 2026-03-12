@@ -10,24 +10,20 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@tailwindcss/vite": "^4.2.1",
-    "autoprefixer": "^10.4.27",
-    "postcss": "^8.5.8",
-    "prop-types": "^15.8.1",
     "react": "^18.2.0",
-    "react-circular-progressbar": "^2.1.0",
     "react-dom": "^18.2.0",
+    "react-is": "^19.2.4",
     "react-router-dom": "^7.13.1",
-    "react-swipeable-list": "^1.7.1",
     "recharts": "^3.8.0",
-    "tailwindcss": "^4.2.1",
-    "typescript": "^5.9.3",
     "zustand": "^5.0.11"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.2.1",
     "@types/react": "^18.3.28",
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "^6.0.0",
+    "tailwindcss": "^4.2.1",
+    "typescript": "^5.9.3",
     "vite": "^8.0.0"
   }
 }
