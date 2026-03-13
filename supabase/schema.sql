@@ -169,7 +169,7 @@ begin
       tbl
     );
     execute format(
-      'create policy "Users can update own %1$s" on public.%1$s for update using (auth.uid() = user_id)',
+      'create policy "Users can update own %1$s" on public.%1$s for update using (auth.uid() = user_id) with check (auth.uid() = user_id)',
       tbl
     );
     execute format(
