@@ -1,7 +1,15 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useFinancialStore } from '../store/useFinancialStore';
 import { useAuth } from '../contexts/AuthContext';
-import { loadUserData, saveAllUserData } from './syncService';
+import {
+  loadUserData,
+  saveProfile,
+  saveIncomes,
+  saveExpenses,
+  saveDebts,
+  saveGoals,
+  saveTransactions,
+} from './syncService';
 
 /**
  * Hook that syncs the Zustand store with Supabase.
@@ -44,12 +52,15 @@ export function useSupabaseSync() {
   const { user } = useAuth();
   const loaded = useRef(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Tracks the snapshot of persisted data after the last successful save (or load)
+  const lastSavedSnapshot = useRef<ReturnType<typeof getPersistedSnapshot> | null>(null);
   const userId = user?.id;
 
   // Load data from Supabase when user logs in
   useEffect(() => {
-    // Reset loaded flag and clear any pending save when the user changes
+    // Reset state and clear any pending save when the user changes
     loaded.current = false;
+    lastSavedSnapshot.current = null;
     if (saveTimer.current) {
       clearTimeout(saveTimer.current);
       saveTimer.current = null;
@@ -100,6 +111,9 @@ export function useSupabaseSync() {
 
         // Recalculate after full hydration
         useFinancialStore.getState().recalculate();
+
+        // Record the loaded state so the subscription doesn't re-save it immediately
+        lastSavedSnapshot.current = getPersistedSnapshot(useFinancialStore.getState());
         loaded.current = true;
       } catch (err) {
         console.error('Error loading data from Supabase:', err);
@@ -110,7 +124,7 @@ export function useSupabaseSync() {
     return () => { cancelled = true; };
   }, [userId]);
 
-  // Debounced save to Supabase on store changes
+  // Debounced save to Supabase — only saves slices that changed since the last save
   const saveToCloud = useCallback(() => {
     if (!userId || !loaded.current) return;
 
@@ -118,19 +132,50 @@ export function useSupabaseSync() {
     saveTimer.current = setTimeout(async () => {
       try {
         const s = useFinancialStore.getState();
-        await saveAllUserData(userId, {
-          profile: s.profile,
-          incomes: s.incomes,
-          expenses: s.expenses,
-          debts: s.debts,
-          goals: s.goals,
-          transactions: s.transactions,
-          onboardingCompleted: s.onboardingCompleted,
-          darkMode: s.darkMode,
-          debtStrategy: s.debtStrategy,
-          goalMode: s.goalMode,
-          currentFund: s.currentFund,
-        });
+        const current = getPersistedSnapshot(s);
+        const prev = lastSavedSnapshot.current;
+
+        const profileSettingsChanged =
+          !prev ||
+          current.profile !== prev.profile ||
+          current.onboardingCompleted !== prev.onboardingCompleted ||
+          current.darkMode !== prev.darkMode ||
+          current.debtStrategy !== prev.debtStrategy ||
+          current.goalMode !== prev.goalMode ||
+          current.currentFund !== prev.currentFund;
+
+        // Save profile first (other tables FK-reference profiles)
+        if (profileSettingsChanged) {
+          await saveProfile(userId, s.profile, {
+            onboardingCompleted: s.onboardingCompleted,
+            darkMode: s.darkMode,
+            debtStrategy: s.debtStrategy,
+            goalMode: s.goalMode,
+            currentFund: s.currentFund,
+          });
+        }
+
+        // Save only the entity slices that actually changed
+        await Promise.all([
+          (!prev || current.incomes !== prev.incomes)
+            ? saveIncomes(userId, s.incomes)
+            : Promise.resolve(),
+          (!prev || current.expenses !== prev.expenses)
+            ? saveExpenses(userId, s.expenses)
+            : Promise.resolve(),
+          (!prev || current.debts !== prev.debts)
+            ? saveDebts(userId, s.debts)
+            : Promise.resolve(),
+          (!prev || current.goals !== prev.goals)
+            ? saveGoals(userId, s.goals)
+            : Promise.resolve(),
+          (!prev || current.transactions !== prev.transactions)
+            ? saveTransactions(userId, s.transactions)
+            : Promise.resolve(),
+        ]);
+
+        // Update baseline snapshot after a successful save
+        lastSavedSnapshot.current = current;
       } catch (err) {
         console.error('Error saving data to Supabase:', err);
       }
