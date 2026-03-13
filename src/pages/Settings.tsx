@@ -49,6 +49,7 @@ export function Settings() {
     setDeleteError('');
     setDeleting(true);
     try {
+      // RPC defined in the separate Supabase backend repository
       const { error } = await supabase.rpc('delete_user_account');
       if (error) {
         setDeleteError(error.message);
