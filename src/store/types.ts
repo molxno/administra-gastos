@@ -270,6 +270,9 @@ export interface FinancialState {
   emergencyPlan: EmergencyPlan;
 }
 
+export type DebtStrategy = 'avalanche' | 'snowball';
+export type GoalMode = 'sequential' | 'parallel';
+
 export interface FinancialStore {
   // Data
   profile: UserProfile;
@@ -283,8 +286,8 @@ export interface FinancialStore {
   // UI State
   onboardingCompleted: boolean;
   darkMode: boolean;
-  debtStrategy: 'avalanche' | 'snowball';
-  goalMode: 'sequential' | 'parallel';
+  debtStrategy: DebtStrategy;
+  goalMode: GoalMode;
 
   // Computed state
   financialState: FinancialState | null;
@@ -317,8 +320,8 @@ export interface FinancialStore {
   setCurrentFund: (amount: number) => void;
   setOnboardingCompleted: (v: boolean) => void;
   toggleDarkMode: () => void;
-  setDebtStrategy: (s: 'avalanche' | 'snowball') => void;
-  setGoalMode: (m: 'sequential' | 'parallel') => void;
+  setDebtStrategy: (s: DebtStrategy) => void;
+  setGoalMode: (m: GoalMode) => void;
 
   recalculate: () => void;
 }

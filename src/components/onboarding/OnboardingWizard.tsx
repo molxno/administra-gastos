@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useFinancialStore } from '../../store/useFinancialStore';
+import { useAuth } from '../../contexts/AuthContext';
 import { IncomeStep } from './IncomeStep';
 import { ExpensesStep } from './ExpensesStep';
 import { DebtsStep } from './DebtsStep';
@@ -15,9 +16,11 @@ const STEPS = [
 
 export function OnboardingWizard() {
   const [step, setStep] = useState(1);
-  const { setIncomes, setExpenses, setDebts, setGoals, setCurrentFund, setOnboardingCompleted, setProfile } = useFinancialStore();
+  const { setIncomes, setExpenses, setDebts, setGoals, setCurrentFund, setOnboardingCompleted, setProfile, profile } = useFinancialStore();
+  const { user } = useAuth();
 
-  const [name, setName] = useState('');
+  // Name comes from signup (stored in profile via trigger, or from user_metadata)
+  const userName = profile.name || user?.user_metadata?.name || '';
   const [currency, setCurrency] = useState('COP');
   const [incomes, setLocalIncomes] = useState<Income[]>([]);
   const [expenses, setLocalExpenses] = useState<Expense[]>([]);
@@ -26,7 +29,7 @@ export function OnboardingWizard() {
   const [currentFundLocal, setCurrentFundLocal] = useState(0);
 
   const handleFinish = () => {
-    setProfile({ name, country: 'Colombia', currency, locale: currency === 'COP' ? 'es-CO' : 'en-US' });
+    setProfile({ name: userName, country: 'Colombia', currency, locale: currency === 'COP' ? 'es-CO' : 'en-US' });
     setIncomes(incomes);
     setExpenses(expenses);
     setDebts(debts);
@@ -74,8 +77,6 @@ export function OnboardingWizard() {
         <div className="flex-1">
           {step === 1 && (
             <IncomeStep
-              name={name}
-              setName={setName}
               currency={currency}
               setCurrency={setCurrency}
               incomes={incomes}

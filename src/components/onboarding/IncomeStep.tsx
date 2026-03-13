@@ -4,8 +4,6 @@ import { CurrencyInput } from '../shared/CurrencyInput';
 import { nanoid } from '../shared/nanoid';
 
 interface IncomeStepProps {
-  name: string;
-  setName: (v: string) => void;
   currency: string;
   setCurrency: (v: string) => void;
   incomes: Income[];
@@ -23,7 +21,7 @@ const CURRENCIES = [
   { code: 'PEN', label: 'Sol peruano (PEN)' },
 ];
 
-export function IncomeStep({ name, setName, currency, setCurrency, incomes, setIncomes, onNext }: IncomeStepProps) {
+export function IncomeStep({ currency, setCurrency, incomes, setIncomes, onNext }: IncomeStepProps) {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<Partial<Income>>({
     name: '',
@@ -47,38 +45,26 @@ export function IncomeStep({ name, setName, currency, setCurrency, incomes, setI
 
   const removeIncome = (id: string) => setIncomes(incomes.filter(i => i.id !== id));
 
-  const canNext = name.trim().length > 0 && incomes.length > 0;
+  const canNext = incomes.length > 0;
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-gray-100 mb-1">¿Cómo te llamas y cuánto ganas?</h2>
-        <p className="text-sm text-gray-500">Empieza por tu nombre y tus fuentes de ingreso</p>
+        <h2 className="text-xl font-bold text-gray-100 mb-1">¿Cuánto ganas?</h2>
+        <p className="text-sm text-gray-500">Configura tu moneda y tus fuentes de ingreso</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-1.5">Tu nombre <span className="text-red-400">*</span></label>
-          <input
-            type="text"
-            value={name}
-            onChange={e => setName(e.target.value)}
-            placeholder="Ej: Carlos"
-            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-gray-100 placeholder-gray-600 focus:outline-none focus:border-blue-500"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-1.5">Moneda</label>
-          <select
-            value={currency}
-            onChange={e => setCurrency(e.target.value)}
-            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-gray-100 focus:outline-none focus:border-blue-500"
-          >
-            {CURRENCIES.map(c => (
-              <option key={c.code} value={c.code}>{c.label}</option>
-            ))}
-          </select>
-        </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-300 mb-1.5">Moneda</label>
+        <select
+          value={currency}
+          onChange={e => setCurrency(e.target.value)}
+          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-gray-100 focus:outline-none focus:border-blue-500"
+        >
+          {CURRENCIES.map(c => (
+            <option key={c.code} value={c.code}>{c.label}</option>
+          ))}
+        </select>
       </div>
 
       {/* Incomes list */}
@@ -193,7 +179,7 @@ export function IncomeStep({ name, setName, currency, setCurrency, incomes, setI
         >
           Continuar →
         </button>
-        {!canNext && <p className="text-xs text-gray-600 text-center mt-2">Ingresa tu nombre y al menos un ingreso para continuar</p>}
+        {!canNext && <p className="text-xs text-gray-600 text-center mt-2">Agrega al menos un ingreso para continuar</p>}
       </div>
     </div>
   );
