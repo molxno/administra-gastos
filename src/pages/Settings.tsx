@@ -20,6 +20,7 @@ export function Settings() {
   const [deleteError, setDeleteError] = useState('');
   const [localProfile, setLocalProfile] = useState({ ...profile });
   const [loggingOut, setLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState('');
 
   const saveProfile = () => {
     setProfile(localProfile);
@@ -33,20 +34,34 @@ export function Settings() {
 
   const handleLogout = async () => {
     setLoggingOut(true);
-    await signOut();
+    setLogoutError('');
+    try {
+      await signOut();
+    } catch (err) {
+      console.error('Logout failed:', err);
+      setLogoutError('Error al cerrar sesión. Intenta de nuevo.');
+    } finally {
+      setLoggingOut(false);
+    }
   };
 
   const handleDeleteAccount = async () => {
     setDeleteError('');
     setDeleting(true);
-    const { error } = await supabase.rpc('delete_user_account');
-    if (error) {
-      setDeleteError(error.message);
+    try {
+      const { error } = await supabase.rpc('delete_user_account');
+      if (error) {
+        setDeleteError(error.message);
+        return;
+      }
+      localStorage.removeItem('tutor-financiero-store');
+      await signOut();
+    } catch (err) {
+      console.error('Account deletion failed:', err);
+      setDeleteError('Error al eliminar la cuenta. Intenta de nuevo.');
+    } finally {
       setDeleting(false);
-      return;
     }
-    localStorage.removeItem('tutor-financiero-store');
-    await signOut();
   };
 
   return (
@@ -71,6 +86,9 @@ export function Settings() {
             {loggingOut ? 'Cerrando...' : 'Cerrar sesión'}
           </button>
         </div>
+        {logoutError && (
+          <p className="text-sm text-red-400 mt-2">{logoutError}</p>
+        )}
       </Card>
 
       {/* Profile */}

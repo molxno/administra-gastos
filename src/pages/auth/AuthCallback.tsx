@@ -8,11 +8,15 @@ export function AuthCallback() {
   useEffect(() => {
     // Supabase handles the OAuth/magic-link tokens from the URL hash automatically.
     // We just need to wait for the session to be established, then redirect.
-    supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_IN' || event === 'PASSWORD_RECOVERY') {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN') {
         navigate('/', { replace: true });
+      } else if (event === 'PASSWORD_RECOVERY') {
+        navigate('/auth/reset-password', { replace: true });
       }
     });
+
+    return () => subscription.unsubscribe();
   }, [navigate]);
 
   return (

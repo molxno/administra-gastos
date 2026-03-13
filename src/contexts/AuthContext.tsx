@@ -74,6 +74,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
+    // Clear persisted store to prevent data leakage on shared devices
+    localStorage.removeItem('tutor-financiero-store');
   }, []);
 
   const resetPassword = useCallback(async (email: string) => {

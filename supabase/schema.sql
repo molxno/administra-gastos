@@ -127,7 +127,7 @@ alter table public.transactions enable row level security;
 create policy "Users can view own profile"
   on public.profiles for select using (auth.uid() = id);
 create policy "Users can update own profile"
-  on public.profiles for update using (auth.uid() = id);
+  on public.profiles for update using (auth.uid() = id) with check (auth.uid() = id);
 create policy "Users can insert own profile"
   on public.profiles for insert with check (auth.uid() = id);
 
@@ -137,7 +137,7 @@ create policy "Users can view own incomes"
 create policy "Users can insert own incomes"
   on public.incomes for insert with check (auth.uid() = user_id);
 create policy "Users can update own incomes"
-  on public.incomes for update using (auth.uid() = user_id);
+  on public.incomes for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "Users can delete own incomes"
   on public.incomes for delete using (auth.uid() = user_id);
 
@@ -147,7 +147,7 @@ create policy "Users can view own expenses"
 create policy "Users can insert own expenses"
   on public.expenses for insert with check (auth.uid() = user_id);
 create policy "Users can update own expenses"
-  on public.expenses for update using (auth.uid() = user_id);
+  on public.expenses for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "Users can delete own expenses"
   on public.expenses for delete using (auth.uid() = user_id);
 
@@ -157,7 +157,7 @@ create policy "Users can view own debts"
 create policy "Users can insert own debts"
   on public.debts for insert with check (auth.uid() = user_id);
 create policy "Users can update own debts"
-  on public.debts for update using (auth.uid() = user_id);
+  on public.debts for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "Users can delete own debts"
   on public.debts for delete using (auth.uid() = user_id);
 
@@ -167,7 +167,7 @@ create policy "Users can view own goals"
 create policy "Users can insert own goals"
   on public.goals for insert with check (auth.uid() = user_id);
 create policy "Users can update own goals"
-  on public.goals for update using (auth.uid() = user_id);
+  on public.goals for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "Users can delete own goals"
   on public.goals for delete using (auth.uid() = user_id);
 
@@ -192,7 +192,7 @@ begin
   );
   return new;
 end;
-$$ language plpgsql security definer;
+$$ language plpgsql security definer set search_path = public, auth;
 
 -- Drop trigger if exists, then create
 drop trigger if exists on_auth_user_created on auth.users;
@@ -211,13 +211,18 @@ begin
 end;
 $$ language plpgsql;
 
+drop trigger if exists profiles_updated_at on public.profiles;
 create trigger profiles_updated_at before update on public.profiles
   for each row execute procedure public.update_updated_at();
+drop trigger if exists incomes_updated_at on public.incomes;
 create trigger incomes_updated_at before update on public.incomes
   for each row execute procedure public.update_updated_at();
+drop trigger if exists expenses_updated_at on public.expenses;
 create trigger expenses_updated_at before update on public.expenses
   for each row execute procedure public.update_updated_at();
+drop trigger if exists debts_updated_at on public.debts;
 create trigger debts_updated_at before update on public.debts
   for each row execute procedure public.update_updated_at();
+drop trigger if exists goals_updated_at on public.goals;
 create trigger goals_updated_at before update on public.goals
   for each row execute procedure public.update_updated_at();

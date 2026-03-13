@@ -17,6 +17,7 @@ import { Login } from './pages/auth/Login';
 import { Signup } from './pages/auth/Signup';
 import { ForgotPassword } from './pages/auth/ForgotPassword';
 import { AuthCallback } from './pages/auth/AuthCallback';
+import { ResetPassword } from './pages/auth/ResetPassword';
 
 function AppRoutes() {
   const { onboardingCompleted } = useFinancialStore();
@@ -71,6 +72,7 @@ function AppRouter() {
         <Route path="/auth/signup" element={<Signup />} />
         <Route path="/auth/forgot-password" element={<ForgotPassword />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/auth/reset-password" element={<ResetPassword />} />
         <Route path="*" element={<Navigate to="/auth/login" replace />} />
       </Routes>
     );
@@ -79,6 +81,7 @@ function AppRouter() {
   return (
     <Routes>
       <Route path="/auth/callback" element={<AuthCallback />} />
+      <Route path="/auth/reset-password" element={<ResetPassword />} />
       <Route path="/auth/*" element={<Navigate to="/" replace />} />
       <Route path="/*" element={<AuthenticatedApp />} />
     </Routes>
