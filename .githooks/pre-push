@@ -2,25 +2,22 @@
 # Pre-push hook: prevent direct push to main
 # All changes must go through PRs from feature branches -> dev -> main
 
-current_branch=$(git symbolic-ref HEAD 2>/dev/null | sed 's|refs/heads/||')
 remote="$1"
 
 while read local_ref local_sha remote_ref remote_sha; do
   if echo "$remote_ref" | grep -qE "refs/heads/main$"; then
-    if [ "$current_branch" = "main" ]; then
-      echo ""
-      echo "ERROR: Push directo a main no esta permitido."
-      echo ""
-      echo "Gitflow del proyecto:"
-      echo "  1. Crea una rama desde dev: git checkout -b feat/mi-feature dev"
-      echo "  2. Haz tus commits"
-      echo "  3. Push tu rama: git push -u origin feat/mi-feature"
-      echo "  4. Crea un PR hacia dev"
-      echo "  5. Despues de review, merge a dev"
-      echo "  6. Para release: crea PR de dev -> main"
-      echo ""
-      exit 1
-    fi
+    echo ""
+    echo "ERROR: Push directo a main no está permitido."
+    echo ""
+    echo "Gitflow del proyecto:"
+    echo "  1. Crea una rama desde dev: git checkout -b feat/mi-feature dev"
+    echo "  2. Haz tus commits"
+    echo "  3. Push tu rama: git push -u origin feat/mi-feature"
+    echo "  4. Crea un PR hacia dev"
+    echo "  5. Después de review, merge a dev"
+    echo "  6. Para release: crea PR de dev -> main"
+    echo ""
+    exit 1
   fi
 done
 

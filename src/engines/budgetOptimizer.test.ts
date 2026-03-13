@@ -87,7 +87,7 @@ describe('runBudgetOptimizer', () => {
       makeExpense(1000000, 'entertainment', { id: '1', name: 'Entretenimiento' }),
     ]
     const result = runBudgetOptimizer([makeIncome(3000000)], expenses, [], null)
-    expect(result.recommendations.length).toBeGreaterThanOrEqual(0)
+    expect(result.recommendations.length).toBeGreaterThan(0)
   })
 
   it('should add urgent recommendation when free flow is negative', () => {

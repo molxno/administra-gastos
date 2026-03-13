@@ -1,45 +1,45 @@
 # Tutor Financiero Personal
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-113%20passing-brightgreen.svg)](#testing)
-[![Coverage](https://img.shields.io/badge/coverage-94.97%25-brightgreen.svg)](#testing)
+[![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](#testing)
+[![Coverage](https://img.shields.io/badge/coverage-%E2%89%A580%25-brightgreen.svg)](#testing)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue.svg)](tsconfig.json)
 
-App web de finanzas personales que actua como un **tutor financiero senior**. No es un simple tracker de gastos — es un sistema inteligente que analiza tu situacion, diagnostica problemas, genera planes automaticos y te guia paso a paso hacia la libertad financiera con **numeros especificos, no consejos genericos**.
+App web de finanzas personales que actúa como un **tutor financiero senior**. No es un simple tracker de gastos — es un sistema inteligente que analiza tu situación, diagnostica problemas, genera planes automáticos y te guía paso a paso hacia la libertad financiera con **números específicos, no consejos genéricos**.
 
 > 100% client-side. Tus datos nunca salen de tu navegador.
 
 ---
 
-## Caracteristicas
+## Características
 
-| Feature | Descripcion |
+| Feature | Descripción |
 |---|---|
-| Diagnostico financiero | Puntaje de salud 0-100, alertas, fortalezas y debilidades |
-| Estrategia de deuda | Avalanche o Snowball con amortizacion completa y ahorro en intereses |
-| Fases automaticas | Roadmap personalizado: deuda → fondo emergencia → metas → libertad |
-| Plan quincenal | Checklist por quincena con distribucion optima de pagos |
+| Diagnóstico financiero | Puntaje de salud 0-100, alertas, fortalezas y debilidades |
+| Estrategia de deuda | Avalanche o Snowball con amortización completa y ahorro en intereses |
+| Fases automáticas | Roadmap personalizado: deuda → fondo emergencia → metas → libertad |
+| Plan quincenal | Checklist por quincena con distribución óptima de pagos |
 | Metas financieras | Modo secuencial o paralelo con fechas estimadas |
-| Fondo de emergencia | Proyeccion a 24 meses con niveles y termometro visual |
-| Presupuesto por fase | El presupuesto cambia dinamicamente segun tu fase actual |
-| Insights del tutor | Recomendaciones con impacto numerico calculado |
+| Fondo de emergencia | Proyección a 24 meses con niveles y termómetro visual |
+| Presupuesto por fase | El presupuesto cambia dinámicamente según tu fase actual |
+| Insights del tutor | Recomendaciones con impacto numérico calculado |
 
 ## Demo
 
-Abre la app → el wizard de onboarding te guia por la configuracion inicial → el dashboard muestra tu diagnostico completo.
+Abre la app → el wizard de onboarding te guía por la configuración inicial → el dashboard muestra tu diagnóstico completo.
 
 ---
 
 ## Tech Stack
 
-| Tecnologia | Version | Uso |
+| Tecnología | Versión | Uso |
 |---|---|---|
 | React | 18 | UI components |
 | TypeScript | 5 (strict) | Type safety |
 | Vite | 6 | Build tool + dev server |
 | Tailwind CSS | 4 | Estilos (dark mode first) |
 | Zustand | 5 | Estado global + persistencia localStorage |
-| Recharts | 3 | Graficas interactivas |
+| Recharts | 3 | Gráficas interactivas |
 | React Router | 7 | Client-side routing |
 | Vitest | 4 | Testing + coverage |
 
@@ -47,17 +47,17 @@ Abre la app → el wizard de onboarding te guia por la configuracion inicial →
 
 ```
 src/
-├── engines/           # 7 motores de calculo (funciones puras, 95%+ coverage)
+├── engines/           # 7 motores de cálculo (funciones puras, 95%+ coverage)
 │   ├── financialDiagnosis.ts    # Health score, alertas, recomendaciones
-│   ├── debtStrategy.ts          # Avalanche/Snowball + amortizacion
-│   ├── phaseGenerator.ts        # Genera fases automaticas
-│   ├── budgetOptimizer.ts       # Presupuesto por fase y categoria
-│   ├── biweeklyPlanner.ts       # Distribucion quincenal
+│   ├── debtStrategy.ts          # Avalanche/Snowball + amortización
+│   ├── phaseGenerator.ts        # Genera fases automáticas
+│   ├── budgetOptimizer.ts       # Presupuesto por fase y categoría
+│   ├── biweeklyPlanner.ts       # Distribución quincenal
 │   ├── goalPlanner.ts           # Metas secuencial/paralelo
-│   └── emergencyFundCalculator.ts  # Proyeccion fondo emergencia
+│   └── emergencyFundCalculator.ts  # Proyección fondo emergencia
 ├── store/             # Zustand store central + tipos TypeScript
 ├── components/        # UI: layout, onboarding wizard, shared components
-├── pages/             # 9 paginas de la app
+├── pages/             # 9 páginas de la app
 └── utils/             # Formatters, constantes
 ```
 
@@ -66,18 +66,18 @@ src/
 UI Input → Store Action → recalculate() → 7 Engines → financialState → UI Render
 ```
 
-Cada mutacion dispara `recalculate()` que ejecuta los 7 motores y actualiza el estado. Las paginas solo leen de `financialState`, nunca calculan directo.
+Cada mutación dispara `recalculate()` que ejecuta los 7 motores y actualiza el estado. Las páginas solo leen de `financialState`, nunca calculan directo.
 
 ---
 
-## Inicio rapido
+## Inicio rápido
 
 ### Prerequisitos
 
-- Node.js 22.x (ver version exacta en [.nvmrc](.nvmrc))
+- Node.js 22.x (ver versión exacta en [.nvmrc](.nvmrc))
 - npm
 
-### Instalacion
+### Instalación
 
 ```bash
 # 1. Clonar el repo
@@ -100,9 +100,9 @@ Abre `http://localhost:5173`
 
 ```bash
 npm run dev            # Servidor de desarrollo (Vite)
-npm run build          # TypeScript check + build produccion
-npm run typecheck      # Solo verificacion de tipos
-npm run preview        # Preview del build de produccion
+npm run build          # TypeScript check + build producción
+npm run typecheck      # Solo verificación de tipos
+npm run preview        # Preview del build de producción
 npm run test           # Correr todos los tests
 npm run test:watch     # Tests en modo watch (desarrollo)
 npm run test:coverage  # Tests con reporte de cobertura
@@ -115,7 +115,7 @@ npm run precommit      # Lo que corre el pre-commit hook
 
 - **Framework:** Vitest v4 (integrado con Vite)
 - **Coverage:** @vitest/coverage-v8
-- **Umbral minimo:** 80% en statements, branches, functions y lines
+- **Umbral mínimo:** 80% en statements, branches, functions y lines
 - **113 tests** cubriendo los 7 engines + utils
 
 ```bash
@@ -130,7 +130,7 @@ All files          |   94.97 |    90.76 |   97.46 |   94.89 |
 -------------------|---------|----------|---------|---------|
 ```
 
-El pre-commit hook bloquea commits si la cobertura cae por debajo de 80%.
+El pre-commit hook bloquea commits si la cobertura cae por debajo del 80%.
 
 ---
 
@@ -140,19 +140,19 @@ Este proyecto usa un flujo de ramas estricto para mantener `main` estable.
 
 ### Ramas
 
-| Rama | Proposito | Proteccion |
+| Rama | Propósito | Protección |
 |---|---|---|
-| `main` | Produccion (deploy Vercel) | Protegida. Solo via PR desde `dev`. Requiere review. |
-| `dev` | Integracion/desarrollo | Protegida. Solo via PR desde feature branches. |
+| `main` | Producción (deploy Vercel) | Protegida. Solo vía PR desde `dev`. Requiere review. |
+| `dev` | Integración/desarrollo | Protegida. Solo vía PR desde feature branches. |
 | `feat/<nombre>` | Features nuevas | Creada desde `dev` |
 | `fix/<nombre>` | Bug fixes | Creada desde `dev` |
 | `refactor/<nombre>` | Refactorizaciones | Creada desde `dev` |
-| `hotfix/<nombre>` | Fixes urgentes produccion | Creada desde `main`, merge a `main` Y `dev` |
+| `hotfix/<nombre>` | Fixes urgentes producción | Creada desde `main`, merge a `main` Y `dev` |
 
 ### Flujo de trabajo
 
 ```
-feat/mi-feature ──PR──▶ dev ──PR──▶ main (produccion)
+feat/mi-feature ──PR──▶ dev ──PR──▶ main (producción)
 fix/mi-fix      ──PR──▶ dev ──PR──▶ main
 hotfix/urgente  ──PR──▶ main + dev (solo emergencias)
 ```
@@ -185,7 +185,7 @@ Todos los commits deben seguir el formato:
 
 **Scopes:** `engine`, `store`, `ui`, `onboarding`, `dashboard`, `budget`, `debts`, `goals`, `biweekly`, `emergency`, `transactions`, `insights`, `settings`, `deps`
 
-El hook `commit-msg` valida esto automaticamente. Commits que no cumplan el formato seran rechazados.
+El hook `commit-msg` valida esto automáticamente. Commits que no cumplan el formato serán rechazados.
 
 ### Git Hooks
 
@@ -195,7 +195,7 @@ Los hooks viven en `.githooks/` y se activan con:
 git config core.hooksPath .githooks
 ```
 
-| Hook | Que hace |
+| Hook | Qué hace |
 |---|---|
 | `pre-commit` | Corre typecheck + tests con cobertura >= 80% |
 | `commit-msg` | Valida formato Conventional Commits |
@@ -205,7 +205,7 @@ git config core.hooksPath .githooks
 
 ## Contribuir
 
-Lee [CONTRIBUTING.md](CONTRIBUTING.md) para la guia completa.
+Lee [CONTRIBUTING.md](CONTRIBUTING.md) para la guía completa.
 
 **TL;DR:**
 
@@ -219,10 +219,10 @@ Lee [CONTRIBUTING.md](CONTRIBUTING.md) para la guia completa.
 
 ### Reglas de negocio (respeta estas invariantes)
 
-- Deudas alto interes (>1.5%/mes) **SIEMPRE** se priorizan antes de ahorro para metas
-- Fondo de emergencia se construye **DESPUES** de deuda de alto costo, **ANTES** de metas
-- **NUNCA** sugerir pagar menos del minimo de una deuda
-- Siempre dejar colchon 3-5% del ingreso
+- Deudas alto interés (>1.5%/mes) **SIEMPRE** se priorizan antes de ahorro para metas
+- Fondo de emergencia se construye **DESPUÉS** de deuda de alto costo, **ANTES** de metas
+- **NUNCA** sugerir pagar menos del mínimo de una deuda
+- Siempre dejar colchón 3-5% del ingreso
 - Engines son funciones puras — sin side effects, sin acceso al store
 
 ---
@@ -236,13 +236,13 @@ Lee [CONTRIBUTING.md](CONTRIBUTING.md) para la guia completa.
 ├── .githooks/          # Git hooks (CC validation, coverage gate, push protection)
 ├── .github/            # Issue templates, PR template
 ├── src/
-│   ├── engines/        # 7 motores de calculo + tests
+│   ├── engines/        # 7 motores de cálculo + tests
 │   ├── store/          # Zustand store + tipos TypeScript
 │   ├── components/     # UI components
-│   ├── pages/          # 9 paginas
+│   ├── pages/          # 9 páginas
 │   └── utils/          # Helpers + tests
 ├── CLAUDE.md           # Instrucciones para Claude Code
-├── CONTRIBUTING.md     # Guia de contribucion
+├── CONTRIBUTING.md     # Guía de contribución
 └── LICENSE             # MIT License
 ```
 
@@ -252,22 +252,22 @@ Lee [CONTRIBUTING.md](CONTRIBUTING.md) para la guia completa.
 
 - [ ] PWA + offline support
 - [ ] Export/import de datos (JSON)
-- [ ] Graficas de progreso historico
+- [ ] Gráficas de progreso histórico
 - [ ] Soporte multi-moneda
-- [ ] Modo comparacion de estrategias (avalanche vs snowball side-by-side)
-- [ ] Notificaciones de pagos proximos
+- [ ] Modo comparación de estrategias (avalanche vs snowball side-by-side)
+- [ ] Notificaciones de pagos próximos
 - [ ] i18n (English)
 
 ---
 
 ## Licencia
 
-Este proyecto esta bajo la [Licencia MIT](LICENSE). Eres libre de usar, modificar y distribuir este software.
+Este proyecto está bajo la [Licencia MIT](LICENSE). Eres libre de usar, modificar y distribuir este software.
 
 ---
 
-## Creditos
+## Créditos
 
-Construido con React, TypeScript, y mucho cafe.
+Construido con React, TypeScript, y mucho café.
 
 Si este proyecto te ayuda con tus finanzas, considera darle una estrella en GitHub.

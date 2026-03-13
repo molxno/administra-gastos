@@ -55,7 +55,7 @@ describe('addMonths', () => {
     const date = new Date('2026-10-15')
     const result = addMonths(date, 3)
     expect(result.getFullYear()).toBe(2027)
-    expect(result.getMonth()).toBe(0) // January (10+3=13, 13%12=1 → month index 0)
+    expect(result.getMonth()).toBe(0) // January (Oct is month 9, 9+3=12, wraps to month index 0)
   })
 
   it('should handle zero months', () => {

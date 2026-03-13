@@ -73,13 +73,13 @@ describe('runBiweeklyPlanner', () => {
     }
     const result = runBiweeklyPlanner([makeIncome(4000000)], [makeExpense(1000000, 5)], [], debtPhase)
     const savings = result.periods[0].payments.filter(p => p.type === 'savings')
-    expect(savings.length).toBeGreaterThanOrEqual(0) // May have savings if remaining > 0
+    expect(savings.length).toBeGreaterThan(0)
   })
 
   it('should add buffer allocation', () => {
     const result = runBiweeklyPlanner([makeIncome(4000000)], [makeExpense(500000, 5)], [], null)
     const buffers = result.periods[0].payments.filter(p => p.type === 'buffer')
-    expect(buffers.length).toBeGreaterThanOrEqual(0)
+    expect(buffers.length).toBeGreaterThan(0)
   })
 
   it('should calculate total monthly correctly', () => {
