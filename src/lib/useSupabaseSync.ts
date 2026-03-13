@@ -2,6 +2,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import { useFinancialStore } from '../store/useFinancialStore';
 import { useAuth } from '../contexts/AuthContext';
 import { loadUserData, saveAllUserData } from './syncService';
+import { shallow } from 'zustand/shallow';
 
 /**
  * Hook that syncs the Zustand store with Supabase.
@@ -92,9 +93,27 @@ export function useSupabaseSync() {
   useEffect(() => {
     if (!userId) return;
 
-    const unsub = useFinancialStore.subscribe(() => {
-      saveToCloud();
-    });
+    const unsub = useFinancialStore.subscribe(
+      (s) => ({
+        profile: s.profile,
+        incomes: s.incomes,
+        expenses: s.expenses,
+        debts: s.debts,
+        goals: s.goals,
+        transactions: s.transactions,
+        onboardingCompleted: s.onboardingCompleted,
+        darkMode: s.darkMode,
+        debtStrategy: s.debtStrategy,
+        goalMode: s.goalMode,
+        currentFund: s.currentFund,
+      }),
+      () => {
+        saveToCloud();
+      },
+      {
+        equalityFn: shallow,
+      }
+    );
 
     return () => {
       unsub();
