@@ -8,6 +8,38 @@ import { loadUserData, saveAllUserData } from './syncService';
  * - On login: loads user data from Supabase into the store
  * - On store changes: debounced save to Supabase
  */
+
+// Extract only the slices that are actually persisted to Supabase
+function getPersistedSnapshot(state: any) {
+  return {
+    profile: state.profile,
+    incomes: state.incomes,
+    expenses: state.expenses,
+    debts: state.debts,
+    goals: state.goals,
+    transactions: state.transactions,
+    currentFund: state.currentFund,
+    onboardingCompleted: state.onboardingCompleted,
+    darkMode: state.darkMode,
+    debtStrategy: state.debtStrategy,
+    goalMode: state.goalMode,
+  };
+}
+
+// Shallow comparison for the persisted snapshot (object props by reference)
+function arePersistedSnapshotsEqual(
+  a: ReturnType<typeof getPersistedSnapshot>,
+  b: ReturnType<typeof getPersistedSnapshot>
+) {
+  const keys = Object.keys(a) as (keyof typeof a)[];
+  for (const key of keys) {
+    if (a[key] !== b[key]) {
+      return false;
+    }
+  }
+  return true;
+}
+
 export function useSupabaseSync() {
   const { user } = useAuth();
   const loaded = useRef(false);
@@ -109,7 +141,15 @@ export function useSupabaseSync() {
   useEffect(() => {
     if (!userId) return;
 
-    const unsub = useFinancialStore.subscribe(() => {
+    const unsub = useFinancialStore.subscribe((state, prevState) => {
+      const currentPersisted = getPersistedSnapshot(state);
+      const previousPersisted = getPersistedSnapshot(prevState);
+
+      // Avoid triggering saves when only non-persisted / derived state changes
+      if (arePersistedSnapshotsEqual(currentPersisted, previousPersisted)) {
+        return;
+      }
+
       saveToCloud();
     });
 
