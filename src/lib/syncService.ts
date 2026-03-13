@@ -47,15 +47,15 @@ export async function loadUserData(userId: string) {
     ? {
         onboardingCompleted: profileRes.data.onboarding_completed as boolean,
         darkMode: profileRes.data.dark_mode as boolean,
-        debtStrategy: profileRes.data.debt_strategy as 'avalanche' | 'snowball',
-        goalMode: profileRes.data.goal_mode as 'sequential' | 'parallel',
+        debtStrategy: profileRes.data.debt_strategy as DebtStrategy,
+        goalMode: profileRes.data.goal_mode as GoalMode,
         currentFund: Number(profileRes.data.current_fund),
       }
     : {
         onboardingCompleted: false,
         darkMode: true,
-        debtStrategy: 'avalanche' as const,
-        goalMode: 'sequential' as const,
+        debtStrategy: 'avalanche' as DebtStrategy,
+        goalMode: 'sequential' as GoalMode,
         currentFund: 0,
       };
 
