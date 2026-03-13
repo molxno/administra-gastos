@@ -14,6 +14,26 @@ export async function loadUserData(userId: string) {
     supabase.from('transactions').select('*').eq('user_id', userId).order('date', { ascending: false }),
   ]);
 
+  // Validate errors — tolerate missing profile (PGRST116) but throw on real failures
+  if (profileRes.error && profileRes.error.code !== 'PGRST116') {
+    throw new Error(`Failed to load profile: ${profileRes.error.message}`);
+  }
+  if (incomesRes.error) {
+    throw new Error(`Failed to load incomes: ${incomesRes.error.message}`);
+  }
+  if (expensesRes.error) {
+    throw new Error(`Failed to load expenses: ${expensesRes.error.message}`);
+  }
+  if (debtsRes.error) {
+    throw new Error(`Failed to load debts: ${debtsRes.error.message}`);
+  }
+  if (goalsRes.error) {
+    throw new Error(`Failed to load goals: ${goalsRes.error.message}`);
+  }
+  if (transactionsRes.error) {
+    throw new Error(`Failed to load transactions: ${transactionsRes.error.message}`);
+  }
+
   const profile: UserProfile = profileRes.data
     ? {
         name: profileRes.data.name,
@@ -117,7 +137,7 @@ export async function saveProfile(userId: string, profile: UserProfile, settings
   goalMode: string;
   currentFund: number;
 }) {
-  await supabase.from('profiles').upsert({
+  const { error } = await supabase.from('profiles').upsert({
     id: userId,
     name: profile.name,
     country: profile.country,
@@ -129,13 +149,19 @@ export async function saveProfile(userId: string, profile: UserProfile, settings
     goal_mode: settings.goalMode,
     current_fund: settings.currentFund,
   });
+  if (error) {
+    throw new Error(`Failed to save profile: ${error.message}`);
+  }
 }
 
 export async function saveIncomes(userId: string, incomes: Income[]) {
   // Delete all then insert (simple full-sync approach)
-  await supabase.from('incomes').delete().eq('user_id', userId);
+  const { error: deleteError } = await supabase.from('incomes').delete().eq('user_id', userId);
+  if (deleteError) {
+    throw new Error(`Failed to delete incomes: ${deleteError.message}`);
+  }
   if (incomes.length > 0) {
-    await supabase.from('incomes').insert(
+    const { error: insertError } = await supabase.from('incomes').insert(
       incomes.map(i => ({
         id: i.id,
         user_id: userId,
@@ -146,13 +172,19 @@ export async function saveIncomes(userId: string, incomes: Income[]) {
         is_net: i.isNet,
       }))
     );
+    if (insertError) {
+      throw new Error(`Failed to save incomes: ${insertError.message}`);
+    }
   }
 }
 
 export async function saveExpenses(userId: string, expenses: Expense[]) {
-  await supabase.from('expenses').delete().eq('user_id', userId);
+  const { error: deleteError } = await supabase.from('expenses').delete().eq('user_id', userId);
+  if (deleteError) {
+    throw new Error(`Failed to delete expenses: ${deleteError.message}`);
+  }
   if (expenses.length > 0) {
-    await supabase.from('expenses').insert(
+    const { error: insertError } = await supabase.from('expenses').insert(
       expenses.map(e => ({
         id: e.id,
         user_id: userId,
@@ -166,13 +198,19 @@ export async function saveExpenses(userId: string, expenses: Expense[]) {
         notes: e.notes ?? null,
       }))
     );
+    if (insertError) {
+      throw new Error(`Failed to save expenses: ${insertError.message}`);
+    }
   }
 }
 
 export async function saveDebts(userId: string, debts: Debt[]) {
-  await supabase.from('debts').delete().eq('user_id', userId);
+  const { error: deleteError } = await supabase.from('debts').delete().eq('user_id', userId);
+  if (deleteError) {
+    throw new Error(`Failed to delete debts: ${deleteError.message}`);
+  }
   if (debts.length > 0) {
-    await supabase.from('debts').insert(
+    const { error: insertError } = await supabase.from('debts').insert(
       debts.map(d => ({
         id: d.id,
         user_id: userId,
@@ -193,13 +231,19 @@ export async function saveDebts(userId: string, debts: Debt[]) {
         product_value: d.productValue ?? null,
       }))
     );
+    if (insertError) {
+      throw new Error(`Failed to save debts: ${insertError.message}`);
+    }
   }
 }
 
 export async function saveGoals(userId: string, goals: Goal[]) {
-  await supabase.from('goals').delete().eq('user_id', userId);
+  const { error: deleteError } = await supabase.from('goals').delete().eq('user_id', userId);
+  if (deleteError) {
+    throw new Error(`Failed to delete goals: ${deleteError.message}`);
+  }
   if (goals.length > 0) {
-    await supabase.from('goals').insert(
+    const { error: insertError } = await supabase.from('goals').insert(
       goals.map(g => ({
         id: g.id,
         user_id: userId,
@@ -214,13 +258,19 @@ export async function saveGoals(userId: string, goals: Goal[]) {
         notes: g.notes ?? null,
       }))
     );
+    if (insertError) {
+      throw new Error(`Failed to save goals: ${insertError.message}`);
+    }
   }
 }
 
 export async function saveTransactions(userId: string, transactions: Transaction[]) {
-  await supabase.from('transactions').delete().eq('user_id', userId);
+  const { error: deleteError } = await supabase.from('transactions').delete().eq('user_id', userId);
+  if (deleteError) {
+    throw new Error(`Failed to delete transactions: ${deleteError.message}`);
+  }
   if (transactions.length > 0) {
-    await supabase.from('transactions').insert(
+    const { error: insertError } = await supabase.from('transactions').insert(
       transactions.map(t => ({
         id: t.id,
         user_id: userId,
@@ -233,6 +283,9 @@ export async function saveTransactions(userId: string, transactions: Transaction
         is_recurring: t.isRecurring,
       }))
     );
+    if (insertError) {
+      throw new Error(`Failed to save transactions: ${insertError.message}`);
+    }
   }
 }
 

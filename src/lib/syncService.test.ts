@@ -43,8 +43,8 @@ describe('syncService', () => {
   });
 
   describe('loadUserData', () => {
-    it('returns default values when profile is null', async () => {
-      const profileChain = createQueryChain(null);
+    it('returns default values when profile is not found (PGRST116)', async () => {
+      const profileChain = createQueryChain(null, { code: 'PGRST116', message: 'not found' });
       const emptyChain = createQueryChain([]);
 
       mockFrom.mockImplementation((table: string) => {
@@ -129,7 +129,7 @@ describe('syncService', () => {
     });
 
     it('maps debt rows with all optional fields', async () => {
-      const profileChain = createQueryChain(null);
+      const profileChain = createQueryChain(null, { code: 'PGRST116', message: 'not found' });
       const debtsChain = createQueryChain([
         {
           id: 'debt-1', name: 'Visa', type: 'credit_card',
@@ -157,6 +157,32 @@ describe('syncService', () => {
       expect(debt.creditLimit).toBe(10000000);
       expect(debt.productName).toBeUndefined();
       expect(debt.productValue).toBeUndefined();
+    });
+
+    it('throws on profile fetch error (non-PGRST116)', async () => {
+      const profileChain = createQueryChain(null, { code: '42501', message: 'permission denied' });
+      const emptyChain = createQueryChain([]);
+
+      mockFrom.mockImplementation((table: string) => {
+        if (table === 'profiles') return profileChain;
+        return emptyChain;
+      });
+
+      await expect(loadUserData('user-123')).rejects.toThrow('Failed to load profile: permission denied');
+    });
+
+    it('throws on incomes fetch error', async () => {
+      const profileChain = createQueryChain(null, { code: 'PGRST116', message: 'not found' });
+      const errorChain = createQueryChain(null, { code: '42501', message: 'permission denied' });
+      const emptyChain = createQueryChain([]);
+
+      mockFrom.mockImplementation((table: string) => {
+        if (table === 'profiles') return profileChain;
+        if (table === 'incomes') return errorChain;
+        return emptyChain;
+      });
+
+      await expect(loadUserData('user-123')).rejects.toThrow('Failed to load incomes: permission denied');
     });
   });
 
@@ -192,6 +218,24 @@ describe('syncService', () => {
         current_fund: 1000,
       });
     });
+
+    it('throws on upsert error', async () => {
+      const chain = createQueryChain(null, { message: 'upsert failed' });
+      mockFrom.mockReturnValue(chain);
+
+      await expect(saveProfile('user-123', {
+        name: 'Carlos',
+        country: 'Colombia',
+        currency: 'COP',
+        locale: 'es-CO',
+      }, {
+        onboardingCompleted: true,
+        darkMode: true,
+        debtStrategy: 'avalanche',
+        goalMode: 'sequential',
+        currentFund: 1000,
+      })).rejects.toThrow('Failed to save profile: upsert failed');
+    });
   });
 
   describe('saveIncomes', () => {
@@ -220,6 +264,30 @@ describe('syncService', () => {
 
       expect(chain.delete).toHaveBeenCalled();
       expect(chain.insert).not.toHaveBeenCalled();
+    });
+
+    it('throws on delete error', async () => {
+      const chain = createQueryChain(null, { message: 'delete failed' });
+      mockFrom.mockReturnValue(chain);
+
+      await expect(saveIncomes('user-123', [
+        { id: 'i1', name: 'Salario', amount: 3000000, frequency: 'monthly', payDays: [1], isNet: true },
+      ])).rejects.toThrow('Failed to delete incomes: delete failed');
+    });
+
+    it('throws on insert error', async () => {
+      // Delete succeeds (no error), but insert fails
+      const deleteChain = createQueryChain(null, null);
+      const insertChain = createQueryChain(null, { message: 'insert failed' });
+      mockFrom.mockImplementation(() => {
+        // First call returns delete chain, second returns insert chain
+        if (mockFrom.mock.calls.length <= 1) return deleteChain;
+        return insertChain;
+      });
+
+      await expect(saveIncomes('user-123', [
+        { id: 'i1', name: 'Salario', amount: 3000000, frequency: 'monthly', payDays: [1], isNet: true },
+      ])).rejects.toThrow('Failed to save incomes: insert failed');
     });
   });
 
