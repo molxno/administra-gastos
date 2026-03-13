@@ -33,12 +33,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!session) {
-        // Clear persisted store when there is no active session to prevent data leakage
-        localStorage.removeItem('tutor-financiero-store');
-        // Force a full reload to reset all in-memory state (including Zustand stores)
-        window.location.reload();
+        if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+          // Clear persisted store when the user has explicitly signed out or been deleted
+          localStorage.removeItem('tutor-financiero-store');
+          // Force a full reload to reset all in-memory state (including Zustand stores)
+          window.location.reload();
+          return;
+        }
+        // For other events that yield no session, just update auth state so the router
+        // can render unauthenticated routes without forcing a full reload.
+        setState({ user: null, session: null, loading: false });
         return;
       }
       setState({ user: session?.user ?? null, session, loading: false });
