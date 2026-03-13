@@ -54,7 +54,6 @@ export function Settings() {
         setDeleteError(error.message);
         return;
       }
-      localStorage.removeItem('tutor-financiero-store');
       await signOut();
     } catch (err) {
       console.error('Account deletion failed:', err);
