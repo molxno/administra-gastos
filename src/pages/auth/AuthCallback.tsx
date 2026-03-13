@@ -24,20 +24,24 @@ export function AuthCallback() {
     // Check if a session already exists when this component mounts.
     (async () => {
       const { data, error } = await supabase.auth.getSession();
-      if (!isMounted || error) return;
-      if (data.session) {
-        navigate('/', { replace: true });
+      if (!isMounted) return;
+      if (error || !data.session) {
+        navigate('/auth/login', { replace: true });
+        return;
       }
+      navigate('/', { replace: true });
     })();
 
     // Listen for future auth state changes (e.g. OAuth/magic-link completion).
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY') {
         navigate('/auth/reset-password', { replace: true });
-      } else if (event === 'SIGNED_IN') {
+      } else if (event === 'SIGNED_IN' && session) {
         navigate('/', { replace: true });
+      } else if (!session && (event === 'INITIAL_SESSION' || event === 'SIGNED_OUT')) {
+        navigate('/auth/login', { replace: true });
       }
     });
 
