@@ -88,13 +88,28 @@ export function useSupabaseSync() {
     }, 1500); // 1.5s debounce
   }, [userId]);
 
-  // Subscribe to store changes
+  // Subscribe to store changes (only for persisted slices)
   useEffect(() => {
     if (!userId) return;
 
-    const unsub = useFinancialStore.subscribe(() => {
-      saveToCloud();
-    });
+    const unsub = useFinancialStore.subscribe(
+      (state) => ({
+        profile: state.profile,
+        incomes: state.incomes,
+        expenses: state.expenses,
+        debts: state.debts,
+        goals: state.goals,
+        transactions: state.transactions,
+        onboardingCompleted: state.onboardingCompleted,
+        darkMode: state.darkMode,
+        debtStrategy: state.debtStrategy,
+        goalMode: state.goalMode,
+        currentFund: state.currentFund,
+      }),
+      () => {
+        saveToCloud();
+      }
+    );
 
     return () => {
       unsub();
