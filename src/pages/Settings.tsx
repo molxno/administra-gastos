@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useFinancialStore } from '../store/useFinancialStore';
+import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
 import { Card } from '../components/shared/Card';
 import { Modal } from '../components/shared/Modal';
 
@@ -9,9 +11,15 @@ export function Settings() {
     setOnboardingCompleted, debtStrategy, setDebtStrategy,
     goalMode, setGoalMode,
   } = useFinancialStore();
+  const { user, signOut } = useAuth();
 
   const [showResetModal, setShowResetModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
   const [localProfile, setLocalProfile] = useState({ ...profile });
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const saveProfile = () => {
     setProfile(localProfile);
@@ -23,8 +31,48 @@ export function Settings() {
     window.location.reload();
   };
 
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    await signOut();
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeleteError('');
+    setDeleting(true);
+    const { error } = await supabase.rpc('delete_user_account');
+    if (error) {
+      setDeleteError(error.message);
+      setDeleting(false);
+      return;
+    }
+    localStorage.removeItem('tutor-financiero-store');
+    await signOut();
+  };
+
   return (
     <div className="space-y-6">
+      {/* Account */}
+      <Card title="Cuenta" subtitle="Tu sesión activa">
+        <div className="flex items-center justify-between mt-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+              {(profile.name || user?.email || '?')[0].toUpperCase()}
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-200">{profile.name || 'Sin nombre'}</p>
+              <p className="text-xs text-gray-500">{user?.email}</p>
+            </div>
+          </div>
+          <button
+            onClick={handleLogout}
+            disabled={loggingOut}
+            className="text-xs bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+          >
+            {loggingOut ? 'Cerrando...' : 'Cerrar sesión'}
+          </button>
+        </div>
+      </Card>
+
       {/* Profile */}
       <Card title="Perfil" subtitle="Tu información básica">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
@@ -168,6 +216,18 @@ export function Settings() {
               Resetear
             </button>
           </div>
+          <div className="flex items-center justify-between pt-3 border-t border-red-500/20">
+            <div>
+              <p className="text-sm text-gray-300">Eliminar cuenta</p>
+              <p className="text-xs text-gray-500">Elimina tu cuenta y todos los datos asociados. Esto es irreversible.</p>
+            </div>
+            <button
+              onClick={() => { setShowDeleteModal(true); setDeleteConfirm(''); setDeleteError(''); }}
+              className="text-xs bg-red-600/20 border border-red-500/40 text-red-400 px-3 py-1.5 rounded-lg hover:bg-red-600/30 transition-colors"
+            >
+              Eliminar
+            </button>
+          </div>
         </div>
       </Card>
 
@@ -181,6 +241,50 @@ export function Settings() {
             </button>
             <button onClick={handleReset} className="flex-1 bg-red-600 hover:bg-red-700 text-white text-sm font-medium py-2.5 rounded-xl transition-colors">
               Sí, borrar todo
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="Eliminar cuenta" size="sm">
+        <div className="space-y-4">
+          <div className="bg-red-950/50 border border-red-500/30 rounded-lg p-3">
+            <p className="text-sm text-red-400 font-medium">Esta acción es permanente</p>
+            <p className="text-xs text-red-400/70 mt-1">
+              Se eliminará tu cuenta, todos tus datos financieros, ingresos, gastos, deudas, metas y transacciones. No se puede deshacer.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm text-gray-300 mb-1.5">
+              Escribe <span className="font-mono text-red-400 font-semibold">ELIMINAR</span> para confirmar
+            </label>
+            <input
+              type="text"
+              value={deleteConfirm}
+              onChange={e => setDeleteConfirm(e.target.value)}
+              placeholder="ELIMINAR"
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-gray-100 focus:outline-none focus:border-red-500 placeholder-gray-600"
+            />
+          </div>
+
+          {deleteError && (
+            <p className="text-sm text-red-400">{deleteError}</p>
+          )}
+
+          <div className="flex gap-3">
+            <button
+              onClick={() => setShowDeleteModal(false)}
+              className="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm py-2.5 rounded-xl transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handleDeleteAccount}
+              disabled={deleteConfirm !== 'ELIMINAR' || deleting}
+              className="flex-1 bg-red-600 hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-medium py-2.5 rounded-xl transition-colors"
+            >
+              {deleting ? 'Eliminando...' : 'Eliminar cuenta'}
             </button>
           </div>
         </div>
