@@ -43,7 +43,13 @@ export function Header({ onMenuClick }: HeaderProps) {
 
   const handleLogout = async () => {
     setMenuOpen(false);
-    await signOut();
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+      // Mostrar feedback básico al usuario y evitar que la excepción se propague
+      window.alert('No se pudo cerrar sesión. Intenta de nuevo.');
+    }
   };
 
   return (
