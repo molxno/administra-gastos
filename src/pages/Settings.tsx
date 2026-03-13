@@ -37,7 +37,8 @@ export function Settings() {
     setLogoutError('');
     try {
       await signOut();
-    } catch {
+    } catch (err) {
+      console.error('Logout failed:', err);
       setLogoutError('Error al cerrar sesión. Intenta de nuevo.');
     } finally {
       setLoggingOut(false);
@@ -55,7 +56,8 @@ export function Settings() {
       }
       localStorage.removeItem('tutor-financiero-store');
       await signOut();
-    } catch {
+    } catch (err) {
+      console.error('Account deletion failed:', err);
       setDeleteError('Error al eliminar la cuenta. Intenta de nuevo.');
     } finally {
       setDeleting(false);
