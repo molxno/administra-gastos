@@ -176,11 +176,13 @@ export async function saveIncomes(userId: string, incomes: Income[]) {
   }
 
   // Delete rows removed from the store
-  const { error: deleteError } = await supabase
+  const deleteQuery = supabase
     .from('incomes')
     .delete()
-    .eq('user_id', userId)
-    .not('id', 'in', `(${currentIds.join(',')})`);
+    .eq('user_id', userId);
+  const { error: deleteError } = currentIds.length > 0
+    ? await deleteQuery.not('id', 'in', `(${currentIds.join(',')})`)
+    : await deleteQuery;
   if (deleteError) {
     throw new Error(`Failed to clean up incomes: ${deleteError.message}`);
   }
@@ -209,11 +211,13 @@ export async function saveExpenses(userId: string, expenses: Expense[]) {
     }
   }
 
-  const { error: deleteError } = await supabase
+  const deleteQuery = supabase
     .from('expenses')
     .delete()
-    .eq('user_id', userId)
-    .not('id', 'in', `(${currentIds.join(',')})`);
+    .eq('user_id', userId);
+  const { error: deleteError } = currentIds.length > 0
+    ? await deleteQuery.not('id', 'in', `(${currentIds.join(',')})`)
+    : await deleteQuery;
   if (deleteError) {
     throw new Error(`Failed to clean up expenses: ${deleteError.message}`);
   }
@@ -249,11 +253,13 @@ export async function saveDebts(userId: string, debts: Debt[]) {
     }
   }
 
-  const { error: deleteError } = await supabase
+  const deleteQuery = supabase
     .from('debts')
     .delete()
-    .eq('user_id', userId)
-    .not('id', 'in', `(${currentIds.join(',')})`);
+    .eq('user_id', userId);
+  const { error: deleteError } = currentIds.length > 0
+    ? await deleteQuery.not('id', 'in', `(${currentIds.join(',')})`)
+    : await deleteQuery;
   if (deleteError) {
     throw new Error(`Failed to clean up debts: ${deleteError.message}`);
   }
@@ -283,11 +289,13 @@ export async function saveGoals(userId: string, goals: Goal[]) {
     }
   }
 
-  const { error: deleteError } = await supabase
+  const deleteQuery = supabase
     .from('goals')
     .delete()
-    .eq('user_id', userId)
-    .not('id', 'in', `(${currentIds.join(',')})`);
+    .eq('user_id', userId);
+  const { error: deleteError } = currentIds.length > 0
+    ? await deleteQuery.not('id', 'in', `(${currentIds.join(',')})`)
+    : await deleteQuery;
   if (deleteError) {
     throw new Error(`Failed to clean up goals: ${deleteError.message}`);
   }
@@ -315,11 +323,13 @@ export async function saveTransactions(userId: string, transactions: Transaction
     }
   }
 
-  const { error: deleteError } = await supabase
+  const deleteQuery = supabase
     .from('transactions')
     .delete()
-    .eq('user_id', userId)
-    .not('id', 'in', `(${currentIds.join(',')})`);
+    .eq('user_id', userId);
+  const { error: deleteError } = currentIds.length > 0
+    ? await deleteQuery.not('id', 'in', `(${currentIds.join(',')})`)
+    : await deleteQuery;
   if (deleteError) {
     throw new Error(`Failed to clean up transactions: ${deleteError.message}`);
   }

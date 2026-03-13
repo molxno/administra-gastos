@@ -77,7 +77,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut();
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      throw error;
+    }
     // Clear persisted store to prevent data leakage on shared devices
     localStorage.removeItem('tutor-financiero-store');
     // Force a full reload to reset all in-memory state (including Zustand stores)

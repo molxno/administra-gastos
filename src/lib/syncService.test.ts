@@ -258,7 +258,7 @@ describe('syncService', () => {
       expect(chain.not).toHaveBeenCalledWith('id', 'in', '(i1)');
     });
 
-    it('only deletes when incomes array is empty (no upsert)', async () => {
+    it('deletes all rows when incomes array is empty (no upsert, no not-in filter)', async () => {
       const chain = createQueryChain();
       mockFrom.mockReturnValue(chain);
 
@@ -266,6 +266,9 @@ describe('syncService', () => {
 
       expect(chain.upsert).not.toHaveBeenCalled();
       expect(chain.delete).toHaveBeenCalled();
+      expect(chain.eq).toHaveBeenCalledWith('user_id', 'user-123');
+      // Should NOT use .not() filter when array is empty to avoid empty in() list
+      expect(chain.not).not.toHaveBeenCalled();
     });
 
     it('throws on upsert error', async () => {
@@ -306,6 +309,18 @@ describe('syncService', () => {
       expect(chain.upsert).toHaveBeenCalled();
       expect(chain.delete).toHaveBeenCalled();
     });
+
+    it('deletes all rows when expenses array is empty (no not-in filter)', async () => {
+      const chain = createQueryChain();
+      mockFrom.mockReturnValue(chain);
+
+      await saveExpenses('user-123', []);
+
+      expect(chain.upsert).not.toHaveBeenCalled();
+      expect(chain.delete).toHaveBeenCalled();
+      expect(chain.eq).toHaveBeenCalledWith('user_id', 'user-123');
+      expect(chain.not).not.toHaveBeenCalled();
+    });
   });
 
   describe('saveDebts', () => {
@@ -319,6 +334,18 @@ describe('syncService', () => {
 
       expect(chain.upsert).toHaveBeenCalled();
       expect(chain.delete).toHaveBeenCalled();
+    });
+
+    it('deletes all rows when debts array is empty (no not-in filter)', async () => {
+      const chain = createQueryChain();
+      mockFrom.mockReturnValue(chain);
+
+      await saveDebts('user-123', []);
+
+      expect(chain.upsert).not.toHaveBeenCalled();
+      expect(chain.delete).toHaveBeenCalled();
+      expect(chain.eq).toHaveBeenCalledWith('user_id', 'user-123');
+      expect(chain.not).not.toHaveBeenCalled();
     });
   });
 
@@ -334,6 +361,18 @@ describe('syncService', () => {
       expect(chain.upsert).toHaveBeenCalled();
       expect(chain.delete).toHaveBeenCalled();
     });
+
+    it('deletes all rows when goals array is empty (no not-in filter)', async () => {
+      const chain = createQueryChain();
+      mockFrom.mockReturnValue(chain);
+
+      await saveGoals('user-123', []);
+
+      expect(chain.upsert).not.toHaveBeenCalled();
+      expect(chain.delete).toHaveBeenCalled();
+      expect(chain.eq).toHaveBeenCalledWith('user_id', 'user-123');
+      expect(chain.not).not.toHaveBeenCalled();
+    });
   });
 
   describe('saveTransactions', () => {
@@ -347,6 +386,18 @@ describe('syncService', () => {
 
       expect(chain.upsert).toHaveBeenCalled();
       expect(chain.delete).toHaveBeenCalled();
+    });
+
+    it('deletes all rows when transactions array is empty (no not-in filter)', async () => {
+      const chain = createQueryChain();
+      mockFrom.mockReturnValue(chain);
+
+      await saveTransactions('user-123', []);
+
+      expect(chain.upsert).not.toHaveBeenCalled();
+      expect(chain.delete).toHaveBeenCalled();
+      expect(chain.eq).toHaveBeenCalledWith('user_id', 'user-123');
+      expect(chain.not).not.toHaveBeenCalled();
     });
   });
 
