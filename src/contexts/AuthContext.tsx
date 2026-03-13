@@ -91,10 +91,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) {
       throw error;
     }
-    // Clear persisted store to prevent data leakage on shared devices
-    localStorage.removeItem('tutor-financiero-store');
-    // Force a full reload to reset all in-memory state (including Zustand stores)
-    window.location.reload();
   }, []);
 
   const resetPassword = useCallback(async (email: string) => {
