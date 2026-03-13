@@ -34,6 +34,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) {
+        // Clear persisted store when there is no active session to prevent data leakage
+        localStorage.removeItem('tutor-financiero-store');
+      }
       setState({ user: session?.user ?? null, session, loading: false });
     });
 
@@ -76,6 +80,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await supabase.auth.signOut();
     // Clear persisted store to prevent data leakage on shared devices
     localStorage.removeItem('tutor-financiero-store');
+    // Force a full reload to reset all in-memory state (including Zustand stores)
+    window.location.reload();
   }, []);
 
   const resetPassword = useCallback(async (email: string) => {
