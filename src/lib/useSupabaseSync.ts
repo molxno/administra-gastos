@@ -34,16 +34,13 @@ export function useSupabaseSync() {
         const data = await loadUserData(userId!);
         if (cancelled) return;
 
-        const store = useFinancialStore.getState();
-        // Hydrate the store with DB data
-        store.setProfile(data.profile);
-        store.setIncomes(data.incomes);
-        store.setExpenses(data.expenses);
-        store.setDebts(data.debts);
-        store.setGoals(data.goals);
-
-        // Set settings directly via internal set
+        // Hydrate the store with DB data in a single batched update
         useFinancialStore.setState({
+          profile: data.profile,
+          incomes: data.incomes,
+          expenses: data.expenses,
+          debts: data.debts,
+          goals: data.goals,
           transactions: data.transactions,
           currentFund: data.currentFund,
           onboardingCompleted: data.onboardingCompleted,
