@@ -53,6 +53,7 @@ export function useSupabaseSync() {
   const { user } = useAuth();
   const loaded = useRef(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveVersion = useRef(0);
   // Tracks the snapshot of persisted data after the last successful save (or load)
   const lastSavedSnapshot = useRef<ReturnType<typeof getPersistedSnapshot> | null>(null);
   const userId = user?.id;
@@ -144,7 +145,8 @@ export function useSupabaseSync() {
     if (!userId || !loaded.current) return;
 
     if (saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(async () => {
+    const currentSaveVersion = ++saveVersion.current;
+    saveTimer.current = setTimeout(async () => { if (currentSaveVersion !== saveVersion.current) return;
       try {
         const s = useFinancialStore.getState();
         const current = getPersistedSnapshot(s);
