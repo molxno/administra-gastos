@@ -25,7 +25,7 @@ export function useSupabaseSync() {
 
     // Clear current store data to avoid showing previous user's data
     useFinancialStore.setState({
-      profile: null,
+      profile: { name: '', country: 'Colombia', currency: 'COP', locale: 'es-CO' },
       incomes: [],
       expenses: [],
       debts: [],
@@ -34,8 +34,8 @@ export function useSupabaseSync() {
       currentFund: 0,
       onboardingCompleted: false,
       darkMode: false,
-      debtStrategy: null,
-      goalMode: null,
+      debtStrategy: 'avalanche',
+      goalMode: 'sequential',
     });
     // Recalculate derived values after clearing the store
     useFinancialStore.getState().recalculate();
@@ -109,24 +109,9 @@ export function useSupabaseSync() {
   useEffect(() => {
     if (!userId) return;
 
-    const unsub = useFinancialStore.subscribe(
-      (state) => ({
-        profile: state.profile,
-        incomes: state.incomes,
-        expenses: state.expenses,
-        debts: state.debts,
-        goals: state.goals,
-        transactions: state.transactions,
-        onboardingCompleted: state.onboardingCompleted,
-        darkMode: state.darkMode,
-        debtStrategy: state.debtStrategy,
-        goalMode: state.goalMode,
-        currentFund: state.currentFund,
-      }),
-      () => {
-        saveToCloud();
-      }
-    );
+    const unsub = useFinancialStore.subscribe(() => {
+      saveToCloud();
+    });
 
     return () => {
       unsub();
