@@ -16,8 +16,14 @@ export function useSupabaseSync() {
 
   // Load data from Supabase when user logs in
   useEffect(() => {
+    // Reset loaded flag and clear any pending save when the user changes
+    loaded.current = false;
+    if (saveTimer.current) {
+      clearTimeout(saveTimer.current);
+      saveTimer.current = null;
+    }
+
     if (!userId) {
-      loaded.current = false;
       return;
     }
 
