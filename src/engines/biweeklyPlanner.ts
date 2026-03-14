@@ -25,9 +25,8 @@ export function runBiweeklyPlanner(
   const period2Expenses: BiweeklyPayment[] = [];
 
   for (const exp of expenses) {
-    const payment: BiweeklyPayment = {
+    const base: Omit<BiweeklyPayment, 'key' | 'amount'> = {
       name: exp.name,
-      amount: exp.amount,
       type: 'expense',
       dueDay: exp.dueDay,
       category: exp.category,
@@ -36,17 +35,18 @@ export function runBiweeklyPlanner(
 
     if (!exp.dueDay) {
       // No specific day: split 50/50
-      period1Expenses.push({ ...payment, amount: exp.amount / 2 });
-      period2Expenses.push({ ...payment, amount: exp.amount / 2 });
+      period1Expenses.push({ ...base, key: `exp-${exp.id}-p1`, amount: exp.amount / 2 });
+      period2Expenses.push({ ...base, key: `exp-${exp.id}-p2`, amount: exp.amount / 2 });
     } else if (exp.dueDay <= 14) {
-      period1Expenses.push(payment);
+      period1Expenses.push({ ...base, key: `exp-${exp.id}`, amount: exp.amount });
     } else {
-      period2Expenses.push(payment);
+      period2Expenses.push({ ...base, key: `exp-${exp.id}`, amount: exp.amount });
     }
   }
 
   for (const debt of debts) {
     const payment: BiweeklyPayment = {
+      key: `debt-${debt.id}`,
       name: debt.name,
       amount: debt.monthlyPayment,
       type: 'debt',
@@ -94,20 +94,20 @@ export function runBiweeklyPlanner(
   const p2Savings = Math.max(0, p2Remaining * savingsRatio2);
 
   if (p1Savings > 0) {
-    period1Expenses.push({ name: savingsLabel, amount: p1Savings, type: 'savings', completed: false });
+    period1Expenses.push({ key: 'savings-p1', name: savingsLabel, amount: p1Savings, type: 'savings', completed: false });
   }
   if (p2Savings > 0) {
-    period2Expenses.push({ name: savingsLabel, amount: p2Savings, type: 'savings', completed: false });
+    period2Expenses.push({ key: 'savings-p2', name: savingsLabel, amount: p2Savings, type: 'savings', completed: false });
   }
 
   const bufferRatio = 0.10;
   const p1Buffer = Math.max(0, p1Remaining - p1Savings) * bufferRatio;
   const p2Buffer = Math.max(0, p2Remaining - p2Savings) * bufferRatio;
   if (p1Buffer > 0) {
-    period1Expenses.push({ name: 'Colchón imprevistos', amount: p1Buffer, type: 'buffer', completed: false });
+    period1Expenses.push({ key: 'buffer-p1', name: 'Colchón imprevistos', amount: p1Buffer, type: 'buffer', completed: false });
   }
   if (p2Buffer > 0) {
-    period2Expenses.push({ name: 'Colchón imprevistos', amount: p2Buffer, type: 'buffer', completed: false });
+    period2Expenses.push({ key: 'buffer-p2', name: 'Colchón imprevistos', amount: p2Buffer, type: 'buffer', completed: false });
   }
 
   const period1: BiweeklyPeriod = {

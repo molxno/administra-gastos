@@ -11,6 +11,7 @@ import {
   saveGoals,
   saveTransactions,
 } from './syncService';
+import { addToast } from '../components/shared/ToastContainer';
 
 /**
  * Hook that syncs the Zustand store with Supabase.
@@ -32,6 +33,7 @@ function getPersistedSnapshot(state: FinancialStore) {
     darkMode: state.darkMode,
     debtStrategy: state.debtStrategy,
     goalMode: state.goalMode,
+    biweeklyCheckedItems: state.biweeklyCheckedItems,
   };
 }
 
@@ -57,8 +59,7 @@ export function useSupabaseSync() {
   // Tracks the snapshot of persisted data after the last successful save (or load)
   const lastSavedSnapshot = useRef<ReturnType<typeof getPersistedSnapshot> | null>(null);
   const userId = user?.id;
-  const [cloudLoading, setCloudLoading] = useState(false);
-  const [cloudHydrated, setCloudHydrated] = useState(false);
+  const [cloudLoading, setCloudLoading] = useState(!!userId);
 
   // Load data from Supabase when user logs in
   useEffect(() => {
@@ -84,13 +85,17 @@ export function useSupabaseSync() {
         darkMode: true,
         debtStrategy: 'avalanche',
         goalMode: 'sequential',
+        biweeklyCheckedItems: {},
       });
       // Recalculate derived values after clearing the store
       useFinancialStore.getState().recalculate();
       setCloudLoading(false);
-      setCloudHydrated(false);
       return;
     }
+
+    // Snapshot the current localStorage-persisted state before clearing, so we can
+    // restore it if the cloud load fails (avoids leaving user with empty store).
+    const localFallback = getPersistedSnapshot(useFinancialStore.getState());
 
     // For logged-in users, clear any existing user-specific data before starting cloud loading
     // to avoid briefly showing a previous user's financial data after a new login.
@@ -103,10 +108,13 @@ export function useSupabaseSync() {
       transactions: [],
       currentFund: 0,
       onboardingCompleted: false,
+      darkMode: true,
+      debtStrategy: 'avalanche',
+      goalMode: 'sequential',
+      biweeklyCheckedItems: {},
     });
 
     setCloudLoading(true);
-    setCloudHydrated(false);
 
     let cancelled = false;
 
@@ -128,6 +136,7 @@ export function useSupabaseSync() {
           darkMode: data.darkMode,
           debtStrategy: data.debtStrategy,
           goalMode: data.goalMode,
+          biweeklyCheckedItems: data.biweeklyCheckedItems,
         });
 
         // Recalculate after full hydration
@@ -137,13 +146,20 @@ export function useSupabaseSync() {
         lastSavedSnapshot.current = getPersistedSnapshot(useFinancialStore.getState());
         loaded.current = true;
         setCloudLoading(false);
-        setCloudHydrated(true);
       } catch (err) {
         console.error('Error loading data from Supabase:', err);
         if (!cancelled) {
-          // Stop loading but keep whatever is in the local store (do not overwrite with empty).
+          // Restore the locally-persisted state so the user isn't left with an empty store
+          useFinancialStore.setState(localFallback);
+          useFinancialStore.getState().recalculate();
+
+          const message = err instanceof Error ? err.message : 'Error desconocido al cargar datos';
           setCloudLoading(false);
-          setCloudHydrated(false);
+          addToast({
+            type: 'warning',
+            title: 'Sincronización fallida',
+            message: `No se pudo cargar desde la nube. Usando datos locales. (${message})`,
+          });
           // Mark load as completed for this session and initialize the last saved snapshot
           // so that future local changes can be saved, without immediately overwriting cloud data.
           lastSavedSnapshot.current = getPersistedSnapshot(useFinancialStore.getState());
@@ -175,7 +191,8 @@ export function useSupabaseSync() {
           current.darkMode !== prev.darkMode ||
           current.debtStrategy !== prev.debtStrategy ||
           current.goalMode !== prev.goalMode ||
-          current.currentFund !== prev.currentFund;
+          current.currentFund !== prev.currentFund ||
+          current.biweeklyCheckedItems !== prev.biweeklyCheckedItems;
 
         // Save profile first (other tables FK-reference profiles)
         if (profileSettingsChanged) {
@@ -185,6 +202,7 @@ export function useSupabaseSync() {
             debtStrategy: s.debtStrategy,
             goalMode: s.goalMode,
             currentFund: s.currentFund,
+            biweeklyCheckedItems: s.biweeklyCheckedItems,
           });
         }
 
@@ -211,6 +229,12 @@ export function useSupabaseSync() {
         lastSavedSnapshot.current = current;
       } catch (err) {
         console.error('Error saving data to Supabase:', err);
+        const message = err instanceof Error ? err.message : 'Error desconocido';
+        addToast({
+          type: 'error',
+          title: 'Error al guardar',
+          message: `No se pudieron sincronizar los cambios: ${message}`,
+        });
       }
     }, 1500); // 1.5s debounce
   }, [userId]);
@@ -236,8 +260,5 @@ export function useSupabaseSync() {
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
   }, [userId, saveToCloud]);
-  return {
-    cloudLoading,
-    cloudHydrated,
-  };
+  return { cloudLoading };
 }
