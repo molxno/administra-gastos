@@ -48,37 +48,10 @@ function AppRoutes() {
 }
 
 function AuthenticatedApp() {
-  const { cloudLoading, cloudHydrated, cloudError } = useSupabaseSync();
+  const { cloudLoading } = useSupabaseSync();
 
   if (cloudLoading) {
     return <AppLoader message="Sincronizando tu informaci&oacute;n..." />;
-  }
-
-  if (cloudError && !cloudHydrated) {
-    return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
-        <div className="max-w-md w-full space-y-6 text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-red-600/20 rounded-2xl">
-            <span className="text-3xl">!</span>
-          </div>
-          <div className="space-y-2">
-            <h1 className="text-lg font-semibold text-gray-100">Error al cargar datos</h1>
-            <p className="text-sm text-gray-400">
-              No pudimos cargar tu informaci&oacute;n financiera desde el servidor.
-            </p>
-          </div>
-          <div className="bg-red-950/30 border border-red-500/30 rounded-lg p-3 text-left">
-            <p className="text-xs text-red-400 font-mono break-all">{cloudError}</p>
-          </div>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-colors"
-          >
-            Reintentar
-          </button>
-        </div>
-      </div>
-    );
   }
 
   return <AppRoutes />;

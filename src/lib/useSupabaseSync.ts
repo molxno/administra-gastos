@@ -59,7 +59,7 @@ export function useSupabaseSync() {
   // Tracks the snapshot of persisted data after the last successful save (or load)
   const lastSavedSnapshot = useRef<ReturnType<typeof getPersistedSnapshot> | null>(null);
   const userId = user?.id;
-  const [cloudLoading, setCloudLoading] = useState(false);
+  const [cloudLoading, setCloudLoading] = useState(!!userId);
   const [cloudHydrated, setCloudHydrated] = useState(false);
   const [cloudError, setCloudError] = useState<string | null>(null);
 
@@ -111,6 +111,9 @@ export function useSupabaseSync() {
       transactions: [],
       currentFund: 0,
       onboardingCompleted: false,
+      darkMode: true,
+      debtStrategy: 'avalanche',
+      goalMode: 'sequential',
       biweeklyCheckedItems: {},
     });
 
@@ -159,7 +162,13 @@ export function useSupabaseSync() {
           const message = err instanceof Error ? err.message : 'Error desconocido al cargar datos';
           setCloudError(message);
           setCloudLoading(false);
-          setCloudHydrated(false);
+          // Mark as hydrated so the app proceeds with restored local data instead of blocking
+          setCloudHydrated(true);
+          addToast({
+            type: 'warning',
+            title: 'Sincronización fallida',
+            message: `No se pudo cargar desde la nube. Usando datos locales. (${message})`,
+          });
           // Mark load as completed for this session and initialize the last saved snapshot
           // so that future local changes can be saved, without immediately overwriting cloud data.
           lastSavedSnapshot.current = getPersistedSnapshot(useFinancialStore.getState());
