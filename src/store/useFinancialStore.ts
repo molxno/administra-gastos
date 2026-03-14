@@ -105,6 +105,7 @@ export const useFinancialStore = create<FinancialStore>()(
       darkMode: true,
       debtStrategy: 'avalanche',
       goalMode: 'sequential',
+      biweeklyCheckedItems: {},
       financialState: null,
 
       // Profile
@@ -163,6 +164,19 @@ export const useFinancialStore = create<FinancialStore>()(
       setDebtStrategy: (s) => { set({ debtStrategy: s }); get().recalculate(); },
       setGoalMode: (m) => { set({ goalMode: m }); get().recalculate(); },
 
+      toggleBiweeklyCheck: (key) => {
+        set(s => {
+          const next = { ...s.biweeklyCheckedItems };
+          if (next[key]) {
+            delete next[key];
+          } else {
+            next[key] = true;
+          }
+          return { biweeklyCheckedItems: next };
+        });
+      },
+      resetBiweeklyChecks: () => { set({ biweeklyCheckedItems: {} }); },
+
       // Recalculate all computed state
       recalculate: () => {
         const s = get();
@@ -188,6 +202,7 @@ export const useFinancialStore = create<FinancialStore>()(
         darkMode: state.darkMode,
         debtStrategy: state.debtStrategy,
         goalMode: state.goalMode,
+        biweeklyCheckedItems: state.biweeklyCheckedItems,
       }),
       onRehydrateStorage: () => (state) => {
         if (state) {

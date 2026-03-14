@@ -21,9 +21,8 @@ const TYPE_ICONS: Record<BiweeklyPayment['type'], string> = {
 };
 
 export function BiweeklyPlan() {
-  const { financialState, profile } = useFinancialStore();
+  const { financialState, profile, biweeklyCheckedItems, toggleBiweeklyCheck } = useFinancialStore();
   const [activePeriod, setActivePeriod] = useState<1 | 2>(1);
-  const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
 
   const fs = financialState;
   if (!fs) return null;
@@ -33,14 +32,8 @@ export function BiweeklyPlan() {
   const { biweeklyPlan } = fs;
 
   const period = biweeklyPlan.periods.find(p => p.period === activePeriod)!;
-  const toggleCheck = (key: string) => {
-    const next = new Set(checkedItems);
-    if (next.has(key)) next.delete(key);
-    else next.add(key);
-    setCheckedItems(next);
-  };
 
-  const completedCount = period.payments.filter((_, i) => checkedItems.has(`${activePeriod}-${i}`)).length;
+  const completedCount = period.payments.filter(p => biweeklyCheckedItems[p.key]).length;
   const progressPct = period.payments.length > 0 ? (completedCount / period.payments.length) * 100 : 0;
 
   return (
@@ -116,17 +109,26 @@ export function BiweeklyPlan() {
         {/* Checklist */}
         <Card title="Checklist de la Quincena" className="lg:col-span-2">
           <div className="space-y-2 mt-2">
-            {period.payments.map((payment, i) => {
-              const key = `${activePeriod}-${i}`;
-              const isChecked = checkedItems.has(key);
+            {period.payments.map((payment) => {
+              const isChecked = !!biweeklyCheckedItems[payment.key];
               const icon = payment.category
                 ? CATEGORY_ICONS[payment.category as ExpenseCategory]
                 : TYPE_ICONS[payment.type];
 
               return (
                 <div
-                  key={i}
-                  onClick={() => toggleCheck(key)}
+                  key={payment.key}
+                  role="checkbox"
+                  aria-checked={isChecked}
+                  aria-label={`${payment.name} - ${fmt(payment.amount)}`}
+                  tabIndex={0}
+                  onClick={() => toggleBiweeklyCheck(payment.key)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      toggleBiweeklyCheck(payment.key);
+                    }
+                  }}
                   className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all ${
                     isChecked
                       ? 'bg-green-950/30 border border-green-700/40'

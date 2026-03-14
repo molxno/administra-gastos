@@ -50,6 +50,7 @@ export async function loadUserData(userId: string) {
         debtStrategy: profileRes.data.debt_strategy as DebtStrategy,
         goalMode: profileRes.data.goal_mode as GoalMode,
         currentFund: Number(profileRes.data.current_fund),
+        biweeklyCheckedItems: (profileRes.data.biweekly_checked_items as Record<string, boolean>) ?? {},
       }
     : {
         onboardingCompleted: false,
@@ -57,6 +58,7 @@ export async function loadUserData(userId: string) {
         debtStrategy: 'avalanche' as DebtStrategy,
         goalMode: 'sequential' as GoalMode,
         currentFund: 0,
+        biweeklyCheckedItems: {} as Record<string, boolean>,
       };
 
   const incomes: Income[] = (incomesRes.data ?? []).map(r => ({
@@ -136,6 +138,7 @@ export async function saveProfile(userId: string, profile: UserProfile, settings
   debtStrategy: DebtStrategy;
   goalMode: GoalMode;
   currentFund: number;
+  biweeklyCheckedItems: Record<string, boolean>;
 }) {
   const { error } = await supabase.from('profiles').upsert({
     id: userId,
@@ -148,6 +151,7 @@ export async function saveProfile(userId: string, profile: UserProfile, settings
     debt_strategy: settings.debtStrategy,
     goal_mode: settings.goalMode,
     current_fund: settings.currentFund,
+    biweekly_checked_items: settings.biweeklyCheckedItems,
   });
   if (error) {
     throw new Error(`Failed to save profile: ${error.message}`);
@@ -352,6 +356,7 @@ export async function saveAllUserData(
     debtStrategy: DebtStrategy;
     goalMode: GoalMode;
     currentFund: number;
+    biweeklyCheckedItems?: Record<string, boolean>;
   }
 ) {
   // Ensure profile exists before saving entities that FK-reference it
@@ -361,6 +366,7 @@ export async function saveAllUserData(
     debtStrategy: data.debtStrategy,
     goalMode: data.goalMode,
     currentFund: data.currentFund,
+    biweeklyCheckedItems: data.biweeklyCheckedItems ?? {},
   });
 
   await Promise.all([

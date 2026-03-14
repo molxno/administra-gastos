@@ -18,6 +18,9 @@ import { Signup } from './pages/auth/Signup';
 import { ForgotPassword } from './pages/auth/ForgotPassword';
 import { AuthCallback } from './pages/auth/AuthCallback';
 import { ResetPassword } from './pages/auth/ResetPassword';
+import { AppLoader } from './components/shared/AppLoader';
+import { ErrorBoundary } from './components/shared/ErrorBoundary';
+import { ToastContainer } from './components/shared/ToastContainer';
 
 function AppRoutes() {
   const { onboardingCompleted } = useFinancialStore();
@@ -45,7 +48,12 @@ function AppRoutes() {
 }
 
 function AuthenticatedApp() {
-  useSupabaseSync();
+  const { cloudLoading } = useSupabaseSync();
+
+  if (cloudLoading) {
+    return <AppLoader message="Sincronizando tu informaci&oacute;n..." />;
+  }
+
   return <AppRoutes />;
 }
 
@@ -53,16 +61,7 @@ function AppRouter() {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="inline-flex items-center justify-center w-14 h-14 bg-blue-600 rounded-2xl animate-pulse">
-            <span className="text-2xl font-bold text-white">TF</span>
-          </div>
-          <p className="text-sm text-gray-400">Cargando...</p>
-        </div>
-      </div>
-    );
+    return <AppLoader />;
   }
 
   if (!user) {
@@ -90,10 +89,13 @@ function AppRouter() {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <AppRouter />
-      </AuthProvider>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <AuthProvider>
+          <AppRouter />
+          <ToastContainer />
+        </AuthProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }

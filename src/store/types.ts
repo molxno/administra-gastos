@@ -184,6 +184,7 @@ export interface BudgetPlan {
 }
 
 export interface BiweeklyPayment {
+  key: string;
   name: string;
   amount: number;
   type: 'expense' | 'debt' | 'savings' | 'buffer';
@@ -288,6 +289,7 @@ export interface FinancialStore {
   darkMode: boolean;
   debtStrategy: DebtStrategy;
   goalMode: GoalMode;
+  biweeklyCheckedItems: Record<string, boolean>;
 
   // Computed state
   financialState: FinancialState | null;
@@ -322,6 +324,9 @@ export interface FinancialStore {
   toggleDarkMode: () => void;
   setDebtStrategy: (s: DebtStrategy) => void;
   setGoalMode: (m: GoalMode) => void;
+
+  toggleBiweeklyCheck: (key: string) => void;
+  resetBiweeklyChecks: () => void;
 
   recalculate: () => void;
 }
