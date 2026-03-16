@@ -3,7 +3,7 @@ vi.mock('../components/shared/nanoid', () => ({
 }));
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { createTransactionFromPayment } from './useFinancialStore';
+import { createTransactionFromPayment, scopedBiweeklyKey } from './useFinancialStore';
 import type { BiweeklyPayment } from './types';
 
 describe('createTransactionFromPayment', () => {
@@ -38,7 +38,7 @@ describe('createTransactionFromPayment', () => {
       description: 'Arriendo',
       paymentMethod: 'debit',
       isRecurring: true,
-      biweeklyKey: 'exp-1-p1',
+      biweeklyKey: 'exp-1-p1:2026-03',
     });
   });
 
@@ -54,7 +54,7 @@ describe('createTransactionFromPayment', () => {
     const tx = createTransactionFromPayment(payment);
     expect(tx.category).toBe('other');
     expect(tx.type).toBe('expense');
-    expect(tx.biweeklyKey).toBe('exp-2-p1');
+    expect(tx.biweeklyKey).toBe('exp-2-p1:2026-03');
   });
 
   it('maps a debt payment correctly', () => {
@@ -72,7 +72,7 @@ describe('createTransactionFromPayment', () => {
     expect(tx.category).toBe('debt');
     expect(tx.description).toBe('Visa');
     expect(tx.amount).toBe(300000);
-    expect(tx.biweeklyKey).toBe('debt-1');
+    expect(tx.biweeklyKey).toBe('debt-1:2026-03');
   });
 
   it('maps a savings payment correctly', () => {
@@ -115,5 +115,26 @@ describe('createTransactionFromPayment', () => {
 
     const tx = createTransactionFromPayment(payment);
     expect(tx.date).toBe('2026-12-25');
+    expect(tx.biweeklyKey).toBe('exp-1-p2:2026-12');
+  });
+});
+
+describe('scopedBiweeklyKey', () => {
+  it('appends YYYY-MM to the payment key', () => {
+    expect(scopedBiweeklyKey('exp-1-p1', new Date('2026-03-16'))).toBe('exp-1-p1:2026-03');
+    expect(scopedBiweeklyKey('debt-1', new Date('2027-01-01'))).toBe('debt-1:2027-01');
+  });
+
+  it('uses current date when no date provided', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-06-15'));
+    expect(scopedBiweeklyKey('savings-p1')).toBe('savings-p1:2026-06');
+    vi.useRealTimers();
+  });
+
+  it('produces different keys for different months', () => {
+    const march = scopedBiweeklyKey('exp-1', new Date('2026-03-01'));
+    const april = scopedBiweeklyKey('exp-1', new Date('2026-04-01'));
+    expect(march).not.toBe(april);
   });
 });

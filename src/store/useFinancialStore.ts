@@ -100,17 +100,25 @@ const BIWEEKLY_TYPE_TO_CATEGORY: Record<BiweeklyPayment['type'], ExpenseCategory
   buffer: 'other',
 };
 
+/** Build a month-scoped biweeklyKey so each month's occurrence is independent. */
+export function scopedBiweeklyKey(paymentKey: string, date?: Date): string {
+  const d = date ?? new Date();
+  const month = d.toISOString().slice(0, 7); // YYYY-MM
+  return `${paymentKey}:${month}`;
+}
+
 export function createTransactionFromPayment(payment: BiweeklyPayment): Transaction {
+  const today = new Date();
   return {
     id: nanoid(),
-    date: new Date().toISOString().slice(0, 10),
+    date: today.toISOString().slice(0, 10),
     amount: payment.amount,
     type: BIWEEKLY_TYPE_TO_TRANSACTION_TYPE[payment.type],
     category: payment.category ?? BIWEEKLY_TYPE_TO_CATEGORY[payment.type],
     description: payment.name,
     paymentMethod: 'debit',
     isRecurring: true,
-    biweeklyKey: payment.key,
+    biweeklyKey: scopedBiweeklyKey(payment.key, today),
   };
 }
 
@@ -194,15 +202,16 @@ export const useFinancialStore = create<FinancialStore>()(
 
       toggleBiweeklyCheck: (payment) => {
         const s = get();
-        const hasTransaction = s.transactions.some(t => t.biweeklyKey === payment.key);
+        const key = scopedBiweeklyKey(payment.key);
+        const hasTransaction = s.transactions.some(t => t.biweeklyKey === key);
 
         if (hasTransaction) {
-          // Unchecking: remove the linked transaction
+          // Unchecking: remove only the current month's linked transaction
           set(state => ({
-            transactions: state.transactions.filter(t => t.biweeklyKey !== payment.key),
+            transactions: state.transactions.filter(t => t.biweeklyKey !== key),
           }));
         } else {
-          // Checking: create a linked transaction
+          // Checking: create a linked transaction scoped to current month
           const transaction = createTransactionFromPayment(payment);
           set(state => ({
             transactions: [transaction, ...state.transactions],
@@ -210,8 +219,12 @@ export const useFinancialStore = create<FinancialStore>()(
         }
       },
       resetBiweeklyChecks: () => {
+        // Only remove biweekly transactions for the current month, preserving history
+        const currentMonth = new Date().toISOString().slice(0, 7);
         set(state => ({
-          transactions: state.transactions.filter(t => !t.biweeklyKey),
+          transactions: state.transactions.filter(
+            t => !t.biweeklyKey || !t.biweeklyKey.endsWith(`:${currentMonth}`)
+          ),
         }));
       },
 
