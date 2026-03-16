@@ -217,7 +217,7 @@ describe('syncService', () => {
         debt_strategy: 'avalanche',
         goal_mode: 'sequential',
         current_fund: 1000,
-      });
+      }, { onConflict: 'id' });
     });
 
     it('throws on upsert error', async () => {
@@ -298,7 +298,7 @@ describe('syncService', () => {
   });
 
   describe('saveExpenses', () => {
-    it('upserts rows then deletes removed ones', async () => {
+    it('upserts rows with onConflict then deletes removed ones', async () => {
       const chain = createQueryChain();
       mockFrom.mockReturnValue(chain);
 
@@ -306,7 +306,10 @@ describe('syncService', () => {
         { id: 'e1', name: 'Arriendo', amount: 1500000, category: 'housing', isFixed: true, isEssential: true, paymentMethod: 'debit' },
       ]);
 
-      expect(chain.upsert).toHaveBeenCalled();
+      expect(chain.upsert).toHaveBeenCalledWith(
+        expect.any(Array),
+        { onConflict: 'id' }
+      );
       expect(chain.delete).toHaveBeenCalled();
     });
 
@@ -324,7 +327,7 @@ describe('syncService', () => {
   });
 
   describe('saveDebts', () => {
-    it('upserts rows then deletes removed ones', async () => {
+    it('upserts rows with onConflict then deletes removed ones', async () => {
       const chain = createQueryChain();
       mockFrom.mockReturnValue(chain);
 
@@ -332,7 +335,10 @@ describe('syncService', () => {
         { id: 'd1', name: 'Visa', type: 'credit_card', currentBalance: 5000000, monthlyPayment: 200000, interestRate: 2.5, dueDay: 15 },
       ]);
 
-      expect(chain.upsert).toHaveBeenCalled();
+      expect(chain.upsert).toHaveBeenCalledWith(
+        expect.any(Array),
+        { onConflict: 'id' }
+      );
       expect(chain.delete).toHaveBeenCalled();
     });
 
@@ -350,7 +356,7 @@ describe('syncService', () => {
   });
 
   describe('saveGoals', () => {
-    it('upserts rows then deletes removed ones', async () => {
+    it('upserts rows with onConflict then deletes removed ones', async () => {
       const chain = createQueryChain();
       mockFrom.mockReturnValue(chain);
 
@@ -358,7 +364,10 @@ describe('syncService', () => {
         { id: 'g1', name: 'Vacaciones', icon: '', targetAmount: 5000000, currentSaved: 1000000, priority: 1, category: 'travel', isFlexible: true },
       ]);
 
-      expect(chain.upsert).toHaveBeenCalled();
+      expect(chain.upsert).toHaveBeenCalledWith(
+        expect.any(Array),
+        { onConflict: 'id' }
+      );
       expect(chain.delete).toHaveBeenCalled();
     });
 
@@ -376,7 +385,7 @@ describe('syncService', () => {
   });
 
   describe('saveTransactions', () => {
-    it('upserts rows then deletes removed ones', async () => {
+    it('upserts rows with onConflict then deletes removed ones', async () => {
       const chain = createQueryChain();
       mockFrom.mockReturnValue(chain);
 
@@ -384,7 +393,10 @@ describe('syncService', () => {
         { id: 't1', date: '2026-03-01', amount: 50000, type: 'expense', category: 'food', description: 'Almuerzo', paymentMethod: 'cash', isRecurring: false },
       ]);
 
-      expect(chain.upsert).toHaveBeenCalled();
+      expect(chain.upsert).toHaveBeenCalledWith(
+        expect.any(Array),
+        { onConflict: 'id' }
+      );
       expect(chain.delete).toHaveBeenCalled();
     });
 

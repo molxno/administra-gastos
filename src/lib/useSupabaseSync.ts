@@ -174,7 +174,7 @@ export function useSupabaseSync() {
 
     if (saveTimer.current) clearTimeout(saveTimer.current);
     const currentSaveVersion = ++saveVersion.current;
-    saveTimer.current = setTimeout(async () => { if (currentSaveVersion !== saveVersion.current) return;
+    saveTimer.current = setTimeout(async () => { try { if (currentSaveVersion !== saveVersion.current) return;
       const s = useFinancialStore.getState();
       const current = getPersistedSnapshot(s);
       const prev = lastSavedSnapshot.current;
@@ -244,7 +244,14 @@ export function useSupabaseSync() {
           message: 'No se pudieron sincronizar algunos cambios. Se reintentará automáticamente.',
         });
       }
-    }, 1500); // 1.5s debounce
+    } catch (err) {
+      console.error('Unexpected error in autosync save:', err);
+      addToast({
+        type: 'error',
+        title: 'Sync error',
+        message: 'An unexpected error occurred while saving. Changes will be retried.',
+      });
+    } }, 1500); // 1.5s debounce
   }, [userId]);
 
   // Subscribe to store changes (only for persisted slices)

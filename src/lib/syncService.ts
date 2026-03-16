@@ -149,7 +149,7 @@ export async function saveProfile(userId: string, profile: UserProfile, settings
     debt_strategy: settings.debtStrategy,
     goal_mode: settings.goalMode,
     current_fund: settings.currentFund,
-  });
+  }, { onConflict: 'id' });
   if (error) {
     throw new Error(`Failed to save profile: ${error.message}`);
   }
