@@ -50,7 +50,6 @@ export async function loadUserData(userId: string) {
         debtStrategy: profileRes.data.debt_strategy as DebtStrategy,
         goalMode: profileRes.data.goal_mode as GoalMode,
         currentFund: Number(profileRes.data.current_fund),
-        biweeklyCheckedItems: (profileRes.data.biweekly_checked_items as Record<string, boolean>) ?? {},
       }
     : {
         onboardingCompleted: false,
@@ -58,7 +57,6 @@ export async function loadUserData(userId: string) {
         debtStrategy: 'avalanche' as DebtStrategy,
         goalMode: 'sequential' as GoalMode,
         currentFund: 0,
-        biweeklyCheckedItems: {} as Record<string, boolean>,
       };
 
   const incomes: Income[] = (incomesRes.data ?? []).map(r => ({
@@ -123,6 +121,7 @@ export async function loadUserData(userId: string) {
     description: r.description,
     paymentMethod: r.payment_method,
     isRecurring: r.is_recurring,
+    biweeklyKey: r.biweekly_key ?? undefined,
   }));
 
   return { profile, ...settings, incomes, expenses, debts, goals, transactions };
@@ -138,7 +137,6 @@ export async function saveProfile(userId: string, profile: UserProfile, settings
   debtStrategy: DebtStrategy;
   goalMode: GoalMode;
   currentFund: number;
-  biweeklyCheckedItems: Record<string, boolean>;
 }) {
   const { error } = await supabase.from('profiles').upsert({
     id: userId,
@@ -151,8 +149,7 @@ export async function saveProfile(userId: string, profile: UserProfile, settings
     debt_strategy: settings.debtStrategy,
     goal_mode: settings.goalMode,
     current_fund: settings.currentFund,
-    biweekly_checked_items: settings.biweeklyCheckedItems,
-  });
+  }, { onConflict: 'id' });
   if (error) {
     throw new Error(`Failed to save profile: ${error.message}`);
   }
@@ -172,7 +169,8 @@ export async function saveIncomes(userId: string, incomes: Income[]) {
         frequency: i.frequency,
         pay_days: i.payDays,
         is_net: i.isNet,
-      }))
+      })),
+      { onConflict: 'id' }
     );
     if (upsertError) {
       throw new Error(`Failed to save incomes: ${upsertError.message}`);
@@ -208,7 +206,8 @@ export async function saveExpenses(userId: string, expenses: Expense[]) {
         due_day: e.dueDay ?? null,
         payment_method: e.paymentMethod,
         notes: e.notes ?? null,
-      }))
+      })),
+      { onConflict: 'id' }
     );
     if (upsertError) {
       throw new Error(`Failed to save expenses: ${upsertError.message}`);
@@ -250,7 +249,8 @@ export async function saveDebts(userId: string, debts: Debt[]) {
         minimum_payment: d.minimumPayment ?? null,
         product_name: d.productName ?? null,
         product_value: d.productValue ?? null,
-      }))
+      })),
+      { onConflict: 'id' }
     );
     if (upsertError) {
       throw new Error(`Failed to save debts: ${upsertError.message}`);
@@ -286,7 +286,8 @@ export async function saveGoals(userId: string, goals: Goal[]) {
         deadline: g.deadline ?? null,
         is_flexible: g.isFlexible,
         notes: g.notes ?? null,
-      }))
+      })),
+      { onConflict: 'id' }
     );
     if (upsertError) {
       throw new Error(`Failed to save goals: ${upsertError.message}`);
@@ -320,7 +321,9 @@ export async function saveTransactions(userId: string, transactions: Transaction
         description: t.description,
         payment_method: t.paymentMethod,
         is_recurring: t.isRecurring,
-      }))
+        biweekly_key: t.biweeklyKey ?? null,
+      })),
+      { onConflict: 'id' }
     );
     if (upsertError) {
       throw new Error(`Failed to save transactions: ${upsertError.message}`);
@@ -356,7 +359,6 @@ export async function saveAllUserData(
     debtStrategy: DebtStrategy;
     goalMode: GoalMode;
     currentFund: number;
-    biweeklyCheckedItems?: Record<string, boolean>;
   }
 ) {
   // Ensure profile exists before saving entities that FK-reference it
@@ -366,7 +368,6 @@ export async function saveAllUserData(
     debtStrategy: data.debtStrategy,
     goalMode: data.goalMode,
     currentFund: data.currentFund,
-    biweeklyCheckedItems: data.biweeklyCheckedItems ?? {},
   });
 
   await Promise.all([

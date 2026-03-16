@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { FinancialStore, FinancialState } from './types';
+import type { FinancialStore, FinancialState, Transaction, BiweeklyPayment, ExpenseCategory } from './types';
+import { nanoid } from '../components/shared/nanoid';
 import { runFinancialDiagnosis } from '../engines/financialDiagnosis';
 import { runDebtStrategy } from '../engines/debtStrategy';
 import { runBudgetOptimizer } from '../engines/budgetOptimizer';
@@ -85,6 +86,42 @@ function computeFinancialState(
   };
 }
 
+const BIWEEKLY_TYPE_TO_TRANSACTION_TYPE: Record<BiweeklyPayment['type'], Transaction['type']> = {
+  expense: 'expense',
+  debt: 'debt_payment',
+  savings: 'savings',
+  buffer: 'expense',
+};
+
+const BIWEEKLY_TYPE_TO_CATEGORY: Record<BiweeklyPayment['type'], ExpenseCategory> = {
+  expense: 'other',
+  debt: 'debt',
+  savings: 'savings',
+  buffer: 'other',
+};
+
+/** Build a month-scoped biweeklyKey so each month's occurrence is independent. */
+export function scopedBiweeklyKey(paymentKey: string, date?: Date): string {
+  const d = date ?? new Date();
+  const month = d.toISOString().slice(0, 7); // YYYY-MM
+  return `${paymentKey}:${month}`;
+}
+
+export function createTransactionFromPayment(payment: BiweeklyPayment): Transaction {
+  const today = new Date();
+  return {
+    id: nanoid(),
+    date: today.toISOString().slice(0, 10),
+    amount: payment.amount,
+    type: BIWEEKLY_TYPE_TO_TRANSACTION_TYPE[payment.type],
+    category: payment.category ?? BIWEEKLY_TYPE_TO_CATEGORY[payment.type],
+    description: payment.name,
+    paymentMethod: 'debit',
+    isRecurring: true,
+    biweeklyKey: scopedBiweeklyKey(payment.key, today),
+  };
+}
+
 // Placeholder for action types
 function getActions(_set: unknown, _get: unknown) {
   return {};
@@ -105,7 +142,6 @@ export const useFinancialStore = create<FinancialStore>()(
       darkMode: true,
       debtStrategy: 'avalanche',
       goalMode: 'sequential',
-      biweeklyCheckedItems: {},
       financialState: null,
 
       // Profile
@@ -164,18 +200,33 @@ export const useFinancialStore = create<FinancialStore>()(
       setDebtStrategy: (s) => { set({ debtStrategy: s }); get().recalculate(); },
       setGoalMode: (m) => { set({ goalMode: m }); get().recalculate(); },
 
-      toggleBiweeklyCheck: (key) => {
-        set(s => {
-          const next = { ...s.biweeklyCheckedItems };
-          if (next[key]) {
-            delete next[key];
-          } else {
-            next[key] = true;
-          }
-          return { biweeklyCheckedItems: next };
-        });
+      toggleBiweeklyCheck: (payment) => {
+        const s = get();
+        const key = scopedBiweeklyKey(payment.key);
+        const hasTransaction = s.transactions.some(t => t.biweeklyKey === key);
+
+        if (hasTransaction) {
+          // Unchecking: remove only the current month's linked transaction
+          set(state => ({
+            transactions: state.transactions.filter(t => t.biweeklyKey !== key),
+          }));
+        } else {
+          // Checking: create a linked transaction scoped to current month
+          const transaction = createTransactionFromPayment(payment);
+          set(state => ({
+            transactions: [transaction, ...state.transactions],
+          }));
+        }
       },
-      resetBiweeklyChecks: () => { set({ biweeklyCheckedItems: {} }); },
+      resetBiweeklyChecks: () => {
+        // Only remove biweekly transactions for the current month, preserving history
+        const currentMonth = new Date().toISOString().slice(0, 7);
+        set(state => ({
+          transactions: state.transactions.filter(
+            t => !t.biweeklyKey || !t.biweeklyKey.endsWith(`:${currentMonth}`)
+          ),
+        }));
+      },
 
       // Recalculate all computed state
       recalculate: () => {
@@ -202,7 +253,6 @@ export const useFinancialStore = create<FinancialStore>()(
         darkMode: state.darkMode,
         debtStrategy: state.debtStrategy,
         goalMode: state.goalMode,
-        biweeklyCheckedItems: state.biweeklyCheckedItems,
       }),
       onRehydrateStorage: () => (state) => {
         if (state) {

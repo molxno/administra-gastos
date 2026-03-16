@@ -66,7 +66,6 @@ describe('syncService', () => {
       expect(result.debtStrategy).toBe('avalanche');
       expect(result.goalMode).toBe('sequential');
       expect(result.currentFund).toBe(0);
-      expect(result.biweeklyCheckedItems).toEqual({});
       expect(result.incomes).toEqual([]);
       expect(result.expenses).toEqual([]);
       expect(result.debts).toEqual([]);
@@ -85,7 +84,6 @@ describe('syncService', () => {
         debt_strategy: 'snowball',
         goal_mode: 'parallel',
         current_fund: 5000000,
-        biweekly_checked_items: { '1-0': true, '2-1': true },
       };
       const profileChain = createQueryChain(profileData);
       const emptyChain = createQueryChain([]);
@@ -103,7 +101,6 @@ describe('syncService', () => {
       expect(result.debtStrategy).toBe('snowball');
       expect(result.goalMode).toBe('parallel');
       expect(result.currentFund).toBe(5000000);
-      expect(result.biweeklyCheckedItems).toEqual({ '1-0': true, '2-1': true });
     });
 
     it('maps income rows from snake_case to camelCase', async () => {
@@ -163,6 +160,27 @@ describe('syncService', () => {
       expect(debt.productValue).toBeUndefined();
     });
 
+    it('maps transaction rows including biweekly_key to biweeklyKey', async () => {
+      const profileChain = createQueryChain(null, { code: 'PGRST116', message: 'not found' });
+      const transactionsChain = createQueryChain([
+        { id: 't1', date: '2026-03-01', amount: '50000', type: 'expense', category: 'food', description: 'Almuerzo', payment_method: 'cash', is_recurring: false, biweekly_key: 'exp-1-p1:2026-03' },
+        { id: 't2', date: '2026-03-02', amount: '100000', type: 'income', category: 'salary', description: 'Salario', payment_method: 'debit', is_recurring: true, biweekly_key: null },
+      ]);
+      const emptyChain = createQueryChain([]);
+
+      mockFrom.mockImplementation((table: string) => {
+        if (table === 'profiles') return profileChain;
+        if (table === 'transactions') return transactionsChain;
+        return emptyChain;
+      });
+
+      const result = await loadUserData('user-123');
+
+      expect(result.transactions).toHaveLength(2);
+      expect(result.transactions[0].biweeklyKey).toBe('exp-1-p1:2026-03');
+      expect(result.transactions[1].biweeklyKey).toBeUndefined();
+    });
+
     it('throws on profile fetch error (non-PGRST116)', async () => {
       const profileChain = createQueryChain(null, { code: '42501', message: 'permission denied' });
       const emptyChain = createQueryChain([]);
@@ -206,7 +224,6 @@ describe('syncService', () => {
         debtStrategy: 'avalanche',
         goalMode: 'sequential',
         currentFund: 1000,
-        biweeklyCheckedItems: { '1-0': true },
       });
 
       expect(mockFrom).toHaveBeenCalledWith('profiles');
@@ -221,8 +238,7 @@ describe('syncService', () => {
         debt_strategy: 'avalanche',
         goal_mode: 'sequential',
         current_fund: 1000,
-        biweekly_checked_items: { '1-0': true },
-      });
+      }, { onConflict: 'id' });
     });
 
     it('throws on upsert error', async () => {
@@ -240,7 +256,6 @@ describe('syncService', () => {
         debtStrategy: 'avalanche',
         goalMode: 'sequential',
         currentFund: 1000,
-        biweeklyCheckedItems: {},
       })).rejects.toThrow('Failed to save profile: upsert failed');
     });
   });
@@ -258,7 +273,7 @@ describe('syncService', () => {
       // Upsert called with mapped data
       expect(chain.upsert).toHaveBeenCalledWith([
         { id: 'i1', user_id: 'user-123', name: 'Salario', amount: 3000000, frequency: 'monthly', pay_days: [1], is_net: true },
-      ]);
+      ], { onConflict: 'id' });
       // Delete called for cleanup of removed IDs
       expect(chain.delete).toHaveBeenCalled();
       expect(chain.not).toHaveBeenCalledWith('id', 'in', '(i1)');
@@ -304,7 +319,7 @@ describe('syncService', () => {
   });
 
   describe('saveExpenses', () => {
-    it('upserts rows then deletes removed ones', async () => {
+    it('upserts rows with onConflict then deletes removed ones', async () => {
       const chain = createQueryChain();
       mockFrom.mockReturnValue(chain);
 
@@ -312,7 +327,10 @@ describe('syncService', () => {
         { id: 'e1', name: 'Arriendo', amount: 1500000, category: 'housing', isFixed: true, isEssential: true, paymentMethod: 'debit' },
       ]);
 
-      expect(chain.upsert).toHaveBeenCalled();
+      expect(chain.upsert).toHaveBeenCalledWith(
+        expect.any(Array),
+        { onConflict: 'id' }
+      );
       expect(chain.delete).toHaveBeenCalled();
     });
 
@@ -330,7 +348,7 @@ describe('syncService', () => {
   });
 
   describe('saveDebts', () => {
-    it('upserts rows then deletes removed ones', async () => {
+    it('upserts rows with onConflict then deletes removed ones', async () => {
       const chain = createQueryChain();
       mockFrom.mockReturnValue(chain);
 
@@ -338,7 +356,10 @@ describe('syncService', () => {
         { id: 'd1', name: 'Visa', type: 'credit_card', currentBalance: 5000000, monthlyPayment: 200000, interestRate: 2.5, dueDay: 15 },
       ]);
 
-      expect(chain.upsert).toHaveBeenCalled();
+      expect(chain.upsert).toHaveBeenCalledWith(
+        expect.any(Array),
+        { onConflict: 'id' }
+      );
       expect(chain.delete).toHaveBeenCalled();
     });
 
@@ -356,7 +377,7 @@ describe('syncService', () => {
   });
 
   describe('saveGoals', () => {
-    it('upserts rows then deletes removed ones', async () => {
+    it('upserts rows with onConflict then deletes removed ones', async () => {
       const chain = createQueryChain();
       mockFrom.mockReturnValue(chain);
 
@@ -364,7 +385,10 @@ describe('syncService', () => {
         { id: 'g1', name: 'Vacaciones', icon: '', targetAmount: 5000000, currentSaved: 1000000, priority: 1, category: 'travel', isFlexible: true },
       ]);
 
-      expect(chain.upsert).toHaveBeenCalled();
+      expect(chain.upsert).toHaveBeenCalledWith(
+        expect.any(Array),
+        { onConflict: 'id' }
+      );
       expect(chain.delete).toHaveBeenCalled();
     });
 
@@ -382,16 +406,33 @@ describe('syncService', () => {
   });
 
   describe('saveTransactions', () => {
-    it('upserts rows then deletes removed ones', async () => {
+    it('upserts rows with onConflict and maps biweeklyKey to biweekly_key', async () => {
       const chain = createQueryChain();
       mockFrom.mockReturnValue(chain);
 
       await saveTransactions('user-123', [
-        { id: 't1', date: '2026-03-01', amount: 50000, type: 'expense', category: 'food', description: 'Almuerzo', paymentMethod: 'cash', isRecurring: false },
+        { id: 't1', date: '2026-03-01', amount: 50000, type: 'expense', category: 'food', description: 'Almuerzo', paymentMethod: 'cash', isRecurring: false, biweeklyKey: 'exp-1-p1:2026-03' },
       ]);
 
-      expect(chain.upsert).toHaveBeenCalled();
+      expect(chain.upsert).toHaveBeenCalledWith(
+        [{ id: 't1', user_id: 'user-123', date: '2026-03-01', amount: 50000, type: 'expense', category: 'food', description: 'Almuerzo', payment_method: 'cash', is_recurring: false, biweekly_key: 'exp-1-p1:2026-03' }],
+        { onConflict: 'id' }
+      );
       expect(chain.delete).toHaveBeenCalled();
+    });
+
+    it('maps biweeklyKey as null when undefined', async () => {
+      const chain = createQueryChain();
+      mockFrom.mockReturnValue(chain);
+
+      await saveTransactions('user-123', [
+        { id: 't1', date: '2026-03-01', amount: 50000, type: 'expense', category: 'food', description: 'Test', paymentMethod: 'cash', isRecurring: false },
+      ]);
+
+      expect(chain.upsert).toHaveBeenCalledWith(
+        [expect.objectContaining({ biweekly_key: null })],
+        { onConflict: 'id' }
+      );
     });
 
     it('deletes all rows when transactions array is empty (no not-in filter)', async () => {

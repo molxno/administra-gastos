@@ -7,7 +7,7 @@
 
 App web de finanzas personales que actúa como un **tutor financiero senior**. No es un simple tracker de gastos — es un sistema inteligente que analiza tu situación, diagnostica problemas, genera planes automáticos y te guía paso a paso hacia la libertad financiera con **números específicos, no consejos genéricos**.
 
-> 100% client-side. Tus datos nunca salen de tu navegador.
+> Los datos se persisten en **Supabase** (PostgreSQL) con autenticación y sincronización en la nube. También funciona offline con caché local vía localStorage.
 
 ---
 
@@ -39,6 +39,7 @@ Abre la app → el wizard de onboarding te guía por la configuración inicial �
 | Vite | 6 | Build tool + dev server |
 | Tailwind CSS | 4 | Estilos (dark mode first) |
 | Zustand | 5 | Estado global + persistencia localStorage |
+| Supabase | 2 | Auth + PostgreSQL (sync en la nube) |
 | Recharts | 3 | Gráficas interactivas |
 | React Router | 7 | Client-side routing |
 | Vitest | 4 | Testing + coverage |
@@ -56,6 +57,7 @@ src/
 │   ├── goalPlanner.ts           # Metas secuencial/paralelo
 │   └── emergencyFundCalculator.ts  # Proyección fondo emergencia
 ├── store/             # Zustand store central + tipos TypeScript
+├── lib/               # Supabase client, sync service, auth context
 ├── components/        # UI: layout, onboarding wizard, shared components
 ├── pages/             # 9 páginas de la app
 └── utils/             # Formatters, constantes
@@ -64,9 +66,10 @@ src/
 **Flujo de datos (unidireccional):**
 ```
 UI Input → Store Action → recalculate() → 7 Engines → financialState → UI Render
+                       ↘ Supabase Sync (debounced 1.5s) ↗
 ```
 
-Cada mutación dispara `recalculate()` que ejecuta los 7 motores y actualiza el estado. Las páginas solo leen de `financialState`, nunca calculan directo.
+Cada mutación dispara `recalculate()` que ejecuta los 7 motores y actualiza el estado. Las páginas solo leen de `financialState`, nunca calculan directo. Los cambios se sincronizan automáticamente con Supabase PostgreSQL.
 
 ---
 
@@ -76,6 +79,7 @@ Cada mutación dispara `recalculate()` que ejecuta los 7 motores y actualiza el 
 
 - Node.js 22.x (ver versión exacta en [.nvmrc](.nvmrc))
 - npm
+- Proyecto en [Supabase](https://supabase.com) (auth + PostgreSQL)
 
 ### Instalación
 
@@ -87,10 +91,16 @@ cd administra-gastos
 # 2. Instalar dependencias
 npm install
 
-# 3. Configurar git hooks (IMPORTANTE)
+# 3. Configurar variables de entorno
+cp .env.example .env
+# Editar .env con las credenciales de tu proyecto Supabase:
+#   VITE_SUPABASE_URL=https://tu-proyecto.supabase.co
+#   VITE_SUPABASE_ANON_KEY=tu-anon-key
+
+# 4. Configurar git hooks (IMPORTANTE)
 git config core.hooksPath .githooks
 
-# 4. Iniciar servidor de desarrollo
+# 5. Iniciar servidor de desarrollo
 npm run dev
 ```
 
@@ -116,7 +126,7 @@ npm run precommit      # Lo que corre el pre-commit hook
 - **Framework:** Vitest v4 (integrado con Vite)
 - **Coverage:** @vitest/coverage-v8
 - **Umbral mínimo:** 80% en statements, branches, functions y lines
-- **113 tests** cubriendo los 7 engines + utils
+- **140 tests** cubriendo engines, utils, store y sync
 
 ```bash
 npm run test:coverage

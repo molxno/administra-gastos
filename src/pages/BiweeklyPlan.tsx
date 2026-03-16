@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useFinancialStore } from '../store/useFinancialStore';
+import { useState, useMemo } from 'react';
+import { useFinancialStore, scopedBiweeklyKey } from '../store/useFinancialStore';
 import { formatCurrency } from '../utils/formatters';
 import { CATEGORY_ICONS } from '../utils/constants';
 import { Card } from '../components/shared/Card';
@@ -21,7 +21,7 @@ const TYPE_ICONS: Record<BiweeklyPayment['type'], string> = {
 };
 
 export function BiweeklyPlan() {
-  const { financialState, profile, biweeklyCheckedItems, toggleBiweeklyCheck } = useFinancialStore();
+  const { financialState, profile, transactions, toggleBiweeklyCheck } = useFinancialStore();
   const [activePeriod, setActivePeriod] = useState<1 | 2>(1);
 
   const fs = financialState;
@@ -33,7 +33,15 @@ export function BiweeklyPlan() {
 
   const period = biweeklyPlan.periods.find(p => p.period === activePeriod)!;
 
-  const completedCount = period.payments.filter(p => biweeklyCheckedItems[p.key]).length;
+  // Derive checked state only from current month's biweekly transactions.
+  // Computed inline (not memoized with []) so it stays correct across month boundaries.
+  const currentMonthSuffix = `:${new Date().toISOString().slice(0, 7)}`;
+  const checkedKeys = useMemo(() => new Set(
+    transactions
+      .filter(t => t.biweeklyKey?.endsWith(currentMonthSuffix))
+      .map(t => t.biweeklyKey)
+  ), [transactions, currentMonthSuffix]);
+  const completedCount = period.payments.filter(p => checkedKeys.has(scopedBiweeklyKey(p.key))).length;
   const progressPct = period.payments.length > 0 ? (completedCount / period.payments.length) * 100 : 0;
 
   return (
@@ -110,7 +118,7 @@ export function BiweeklyPlan() {
         <Card title="Checklist de la Quincena" className="lg:col-span-2">
           <div className="space-y-2 mt-2">
             {period.payments.map((payment) => {
-              const isChecked = !!biweeklyCheckedItems[payment.key];
+              const isChecked = checkedKeys.has(scopedBiweeklyKey(payment.key));
               const icon = payment.category
                 ? CATEGORY_ICONS[payment.category as ExpenseCategory]
                 : TYPE_ICONS[payment.type];
@@ -122,11 +130,11 @@ export function BiweeklyPlan() {
                   aria-checked={isChecked}
                   aria-label={`${payment.name} - ${fmt(payment.amount)}`}
                   tabIndex={0}
-                  onClick={() => toggleBiweeklyCheck(payment.key)}
+                  onClick={() => toggleBiweeklyCheck(payment)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault();
-                      toggleBiweeklyCheck(payment.key);
+                      toggleBiweeklyCheck(payment);
                     }
                   }}
                   className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all ${
