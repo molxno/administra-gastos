@@ -110,6 +110,7 @@ export function createTransactionFromPayment(payment: BiweeklyPayment): Transact
     description: payment.name,
     paymentMethod: 'debit',
     isRecurring: true,
+    biweeklyKey: payment.key,
   };
 }
 
@@ -194,23 +195,23 @@ export const useFinancialStore = create<FinancialStore>()(
 
       toggleBiweeklyCheck: (payment) => {
         const s = get();
-        const existingTxId = s.biweeklyCheckedItems[payment.key];
+        const isChecked = s.biweeklyCheckedItems[payment.key];
 
-        if (existingTxId) {
-          // Unchecking: remove the transaction and the checked entry
-          set(state => {
-            const next = { ...state.biweeklyCheckedItems };
-            delete next[payment.key];
-            return {
-              biweeklyCheckedItems: next,
-              transactions: state.transactions.filter(t => t.id !== existingTxId),
-            };
-          });
+        if (isChecked) {
+          // Unchecking: remove the linked transaction and uncheck
+          const next = { ...s.biweeklyCheckedItems };
+          delete next[payment.key];
+          set({ biweeklyCheckedItems: next });
+          set(state => ({
+            transactions: state.transactions.filter(t => t.biweeklyKey !== payment.key),
+          }));
         } else {
-          // Checking: create a transaction and store its ID
+          // Checking: create a linked transaction and check
           const transaction = createTransactionFromPayment(payment);
           set(state => ({
-            biweeklyCheckedItems: { ...state.biweeklyCheckedItems, [payment.key]: transaction.id },
+            biweeklyCheckedItems: { ...state.biweeklyCheckedItems, [payment.key]: true },
+          }));
+          set(state => ({
             transactions: [transaction, ...state.transactions],
           }));
         }

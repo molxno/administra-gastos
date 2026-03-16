@@ -179,23 +179,26 @@ export function useSupabaseSync() {
     if (saveTimer.current) clearTimeout(saveTimer.current);
     const currentSaveVersion = ++saveVersion.current;
     saveTimer.current = setTimeout(async () => { if (currentSaveVersion !== saveVersion.current) return;
-      try {
-        const s = useFinancialStore.getState();
-        const current = getPersistedSnapshot(s);
-        const prev = lastSavedSnapshot.current;
+      const s = useFinancialStore.getState();
+      const current = getPersistedSnapshot(s);
+      const prev = lastSavedSnapshot.current;
+      // Track which slices saved successfully to build the new baseline snapshot
+      const saved = { ...(prev ?? current) };
+      let hasError = false;
 
-        const profileSettingsChanged =
-          !prev ||
-          current.profile !== prev.profile ||
-          current.onboardingCompleted !== prev.onboardingCompleted ||
-          current.darkMode !== prev.darkMode ||
-          current.debtStrategy !== prev.debtStrategy ||
-          current.goalMode !== prev.goalMode ||
-          current.currentFund !== prev.currentFund ||
-          current.biweeklyCheckedItems !== prev.biweeklyCheckedItems;
+      const profileSettingsChanged =
+        !prev ||
+        current.profile !== prev.profile ||
+        current.onboardingCompleted !== prev.onboardingCompleted ||
+        current.darkMode !== prev.darkMode ||
+        current.debtStrategy !== prev.debtStrategy ||
+        current.goalMode !== prev.goalMode ||
+        current.currentFund !== prev.currentFund ||
+        current.biweeklyCheckedItems !== prev.biweeklyCheckedItems;
 
-        // Save profile first (other tables FK-reference profiles)
-        if (profileSettingsChanged) {
+      // Save profile first (other tables FK-reference profiles)
+      if (profileSettingsChanged) {
+        try {
           await saveProfile(userId, s.profile, {
             onboardingCompleted: s.onboardingCompleted,
             darkMode: s.darkMode,
@@ -204,36 +207,48 @@ export function useSupabaseSync() {
             currentFund: s.currentFund,
             biweeklyCheckedItems: s.biweeklyCheckedItems,
           });
+          saved.profile = current.profile;
+          saved.onboardingCompleted = current.onboardingCompleted;
+          saved.darkMode = current.darkMode;
+          saved.debtStrategy = current.debtStrategy;
+          saved.goalMode = current.goalMode;
+          saved.currentFund = current.currentFund;
+          saved.biweeklyCheckedItems = current.biweeklyCheckedItems;
+        } catch (err) {
+          hasError = true;
+          console.error('Error saving profile to Supabase:', err);
         }
+      }
 
-        // Save only the entity slices that actually changed
-        await Promise.all([
-          (!prev || current.incomes !== prev.incomes)
-            ? saveIncomes(userId, s.incomes)
-            : Promise.resolve(),
-          (!prev || current.expenses !== prev.expenses)
-            ? saveExpenses(userId, s.expenses)
-            : Promise.resolve(),
-          (!prev || current.debts !== prev.debts)
-            ? saveDebts(userId, s.debts)
-            : Promise.resolve(),
-          (!prev || current.goals !== prev.goals)
-            ? saveGoals(userId, s.goals)
-            : Promise.resolve(),
-          (!prev || current.transactions !== prev.transactions)
-            ? saveTransactions(userId, s.transactions)
-            : Promise.resolve(),
-        ]);
+      // Save entity slices independently — one failure doesn't block others
+      const slices = [
+        { key: 'incomes' as const, changed: !prev || current.incomes !== prev.incomes, save: () => saveIncomes(userId, s.incomes) },
+        { key: 'expenses' as const, changed: !prev || current.expenses !== prev.expenses, save: () => saveExpenses(userId, s.expenses) },
+        { key: 'debts' as const, changed: !prev || current.debts !== prev.debts, save: () => saveDebts(userId, s.debts) },
+        { key: 'goals' as const, changed: !prev || current.goals !== prev.goals, save: () => saveGoals(userId, s.goals) },
+        { key: 'transactions' as const, changed: !prev || current.transactions !== prev.transactions, save: () => saveTransactions(userId, s.transactions) },
+      ];
 
-        // Update baseline snapshot after a successful save
-        lastSavedSnapshot.current = current;
-      } catch (err) {
-        console.error('Error saving data to Supabase:', err);
-        const message = err instanceof Error ? err.message : 'Error desconocido';
+      await Promise.all(slices.map(async (slice) => {
+        if (!slice.changed) return;
+        try {
+          await slice.save();
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (saved as any)[slice.key] = current[slice.key];
+        } catch (err) {
+          hasError = true;
+          console.error(`Error saving ${slice.key} to Supabase:`, err);
+        }
+      }));
+
+      // Always update baseline with what succeeded — prevents cascading failures
+      lastSavedSnapshot.current = saved;
+
+      if (hasError) {
         addToast({
           type: 'error',
           title: 'Error al guardar',
-          message: `No se pudieron sincronizar los cambios: ${message}`,
+          message: 'No se pudieron sincronizar algunos cambios. Se reintentará automáticamente.',
         });
       }
     }, 1500); // 1.5s debounce

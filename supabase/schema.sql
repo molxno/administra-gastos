@@ -107,6 +107,7 @@ create table if not exists public.transactions (
   description text not null default '',
   payment_method text not null default 'cash' check (payment_method in ('cash', 'debit', 'credit_card')),
   is_recurring boolean not null default false,
+  biweekly_key text,
   created_at timestamptz not null default now()
 );
 
@@ -119,6 +120,7 @@ create index if not exists idx_debts_user_id on public.debts(user_id);
 create index if not exists idx_goals_user_id on public.goals(user_id);
 create index if not exists idx_transactions_user_id on public.transactions(user_id);
 create index if not exists idx_transactions_date on public.transactions(user_id, date desc);
+create index if not exists idx_transactions_biweekly_key on public.transactions(user_id, biweekly_key) where biweekly_key is not null;
 
 -- ------------------------------------------------------------
 -- 8. ROW LEVEL SECURITY (RLS)

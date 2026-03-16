@@ -35,6 +35,7 @@ describe('createTransactionFromPayment', () => {
       description: 'Arriendo',
       paymentMethod: 'debit',
       isRecurring: true,
+      biweeklyKey: 'exp-1-p1',
     });
   });
 
@@ -50,6 +51,7 @@ describe('createTransactionFromPayment', () => {
     const tx = createTransactionFromPayment(payment);
     expect(tx.category).toBe('other');
     expect(tx.type).toBe('expense');
+    expect(tx.biweeklyKey).toBe('exp-2-p1');
   });
 
   it('maps a debt payment correctly', () => {
@@ -67,6 +69,7 @@ describe('createTransactionFromPayment', () => {
     expect(tx.category).toBe('debt');
     expect(tx.description).toBe('Visa');
     expect(tx.amount).toBe(300000);
+    expect(tx.biweeklyKey).toBe('debt-1');
   });
 
   it('maps a savings payment correctly', () => {

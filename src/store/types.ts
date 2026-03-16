@@ -83,6 +83,7 @@ export interface Transaction {
   description: string;
   paymentMethod: 'cash' | 'debit' | 'credit_card';
   isRecurring: boolean;
+  biweeklyKey?: string;
 }
 
 export interface BudgetAllocation {
@@ -289,7 +290,7 @@ export interface FinancialStore {
   darkMode: boolean;
   debtStrategy: DebtStrategy;
   goalMode: GoalMode;
-  biweeklyCheckedItems: Record<string, string>;
+  biweeklyCheckedItems: Record<string, boolean>;
 
   // Computed state
   financialState: FinancialState | null;
