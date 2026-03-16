@@ -33,10 +33,13 @@ export function BiweeklyPlan() {
 
   const period = biweeklyPlan.periods.find(p => p.period === activePeriod)!;
 
-  // Derive checked state from transactions with biweeklyKey scoped to current month
+  // Derive checked state only from current month's biweekly transactions
+  const currentMonthSuffix = useMemo(() => `:${new Date().toISOString().slice(0, 7)}`, []);
   const checkedKeys = useMemo(() => new Set(
-    transactions.filter(t => t.biweeklyKey).map(t => t.biweeklyKey)
-  ), [transactions]);
+    transactions
+      .filter(t => t.biweeklyKey?.endsWith(currentMonthSuffix))
+      .map(t => t.biweeklyKey)
+  ), [transactions, currentMonthSuffix]);
   const completedCount = period.payments.filter(p => checkedKeys.has(scopedBiweeklyKey(p.key))).length;
   const progressPct = period.payments.length > 0 ? (completedCount / period.payments.length) * 100 : 0;
 

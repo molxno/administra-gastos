@@ -160,6 +160,27 @@ describe('syncService', () => {
       expect(debt.productValue).toBeUndefined();
     });
 
+    it('maps transaction rows including biweekly_key to biweeklyKey', async () => {
+      const profileChain = createQueryChain(null, { code: 'PGRST116', message: 'not found' });
+      const transactionsChain = createQueryChain([
+        { id: 't1', date: '2026-03-01', amount: '50000', type: 'expense', category: 'food', description: 'Almuerzo', payment_method: 'cash', is_recurring: false, biweekly_key: 'exp-1-p1:2026-03' },
+        { id: 't2', date: '2026-03-02', amount: '100000', type: 'income', category: 'salary', description: 'Salario', payment_method: 'debit', is_recurring: true, biweekly_key: null },
+      ]);
+      const emptyChain = createQueryChain([]);
+
+      mockFrom.mockImplementation((table: string) => {
+        if (table === 'profiles') return profileChain;
+        if (table === 'transactions') return transactionsChain;
+        return emptyChain;
+      });
+
+      const result = await loadUserData('user-123');
+
+      expect(result.transactions).toHaveLength(2);
+      expect(result.transactions[0].biweeklyKey).toBe('exp-1-p1:2026-03');
+      expect(result.transactions[1].biweeklyKey).toBeUndefined();
+    });
+
     it('throws on profile fetch error (non-PGRST116)', async () => {
       const profileChain = createQueryChain(null, { code: '42501', message: 'permission denied' });
       const emptyChain = createQueryChain([]);
@@ -385,19 +406,33 @@ describe('syncService', () => {
   });
 
   describe('saveTransactions', () => {
-    it('upserts rows with onConflict then deletes removed ones', async () => {
+    it('upserts rows with onConflict and maps biweeklyKey to biweekly_key', async () => {
       const chain = createQueryChain();
       mockFrom.mockReturnValue(chain);
 
       await saveTransactions('user-123', [
-        { id: 't1', date: '2026-03-01', amount: 50000, type: 'expense', category: 'food', description: 'Almuerzo', paymentMethod: 'cash', isRecurring: false },
+        { id: 't1', date: '2026-03-01', amount: 50000, type: 'expense', category: 'food', description: 'Almuerzo', paymentMethod: 'cash', isRecurring: false, biweeklyKey: 'exp-1-p1:2026-03' },
       ]);
 
       expect(chain.upsert).toHaveBeenCalledWith(
-        expect.any(Array),
+        [{ id: 't1', user_id: 'user-123', date: '2026-03-01', amount: 50000, type: 'expense', category: 'food', description: 'Almuerzo', payment_method: 'cash', is_recurring: false, biweekly_key: 'exp-1-p1:2026-03' }],
         { onConflict: 'id' }
       );
       expect(chain.delete).toHaveBeenCalled();
+    });
+
+    it('maps biweeklyKey as null when undefined', async () => {
+      const chain = createQueryChain();
+      mockFrom.mockReturnValue(chain);
+
+      await saveTransactions('user-123', [
+        { id: 't1', date: '2026-03-01', amount: 50000, type: 'expense', category: 'food', description: 'Test', paymentMethod: 'cash', isRecurring: false },
+      ]);
+
+      expect(chain.upsert).toHaveBeenCalledWith(
+        [expect.objectContaining({ biweekly_key: null })],
+        { onConflict: 'id' }
+      );
     });
 
     it('deletes all rows when transactions array is empty (no not-in filter)', async () => {
