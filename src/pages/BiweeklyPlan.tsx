@@ -33,8 +33,9 @@ export function BiweeklyPlan() {
 
   const period = biweeklyPlan.periods.find(p => p.period === activePeriod)!;
 
-  // Derive checked state only from current month's biweekly transactions
-  const currentMonthSuffix = useMemo(() => `:${new Date().toISOString().slice(0, 7)}`, []);
+  // Derive checked state only from current month's biweekly transactions.
+  // Computed inline (not memoized with []) so it stays correct across month boundaries.
+  const currentMonthSuffix = `:${new Date().toISOString().slice(0, 7)}`;
   const checkedKeys = useMemo(() => new Set(
     transactions
       .filter(t => t.biweeklyKey?.endsWith(currentMonthSuffix))
